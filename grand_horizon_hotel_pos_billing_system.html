@@ -1,0 +1,3185 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Grand Horizon | Luxury Hotel & Employee POS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        gold: {
+                            50: '#fbf8f1',
+                            100: '#f5eedc',
+                            200: '#ead8b3',
+                            300: '#dec085',
+                            400: '#d2a359',
+                            500: '#c78d3b',
+                            600: '#ba7430',
+                            700: '#9b5929',
+                            800: '#7e4827',
+                            900: '#673c23',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Print Media Styles for Clean Receipt Printing */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #receipt-modal, #receipt-modal * {
+                visibility: visible;
+            }
+            #receipt-modal {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                display: flex !important;
+                align-items: flex-start !important;
+                justify-content: center !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+            }
+            #receipt-card {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+                max-width: 100% !important;
+                width: 80mm !important; /* Standard thermal receipt width */
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-gold-500 selection:text-white flex flex-col min-h-screen">
+
+    <!-- ================= TOP NAVIGATION BAR ================= -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-lg border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('public')">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-slate-950 font-serif font-bold text-2xl shadow-md">
+                        G
+                    </div>
+                    <div>
+                        <span class="font-serif text-xl tracking-wider font-bold text-white block leading-none">GRAND HORIZON</span>
+                        <span class="text-[11px] uppercase tracking-widest text-gold-400 font-medium block mt-1">Hotel & Fine Dining</span>
+                    </div>
+                </div>
+
+                <!-- Public Navigation Links -->
+                <nav id="public-nav-links" class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
+                    <button type="button" onclick="navigateToSection('home')" class="hover:text-gold-400 transition-colors">Overview</button>
+                    <button type="button" onclick="navigateToSection('rooms')" class="hover:text-gold-400 transition-colors">Suites & Rooms</button>
+                    <button type="button" onclick="navigateToSection('dining-menu')" class="hover:text-gold-400 transition-colors">Order Food</button>
+                    <button type="button" onclick="openCustomerCartDrawer()" class="text-gold-400 hover:text-gold-300 flex items-center gap-1.5 font-semibold transition-colors">
+                        <i class="fa-solid fa-bell-concierge"></i>
+                        <span>My Order Tray</span>
+                        <span id="nav-cust-cart-count" class="bg-gold-500 text-slate-950 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                </nav>
+
+                <!-- Action / Portal Switcher Buttons -->
+                <div class="flex items-center gap-3">
+                    <!-- Cloud Database Sync Status Pill -->
+                    <div id="cloud-db-status" class="hidden sm:flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl text-[11px] font-medium text-slate-300" title="Real-time Cloud Database Connection">
+                        <span id="cloud-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span id="cloud-status-text">Connecting DB...</span>
+                    </div>
+
+                    <!-- Shown when on Public Site -->
+                    <button id="nav-emp-btn" onclick="handlePortalClick()" class="bg-gold-500 hover:bg-gold-600 text-slate-950 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2 shadow-md hover:shadow-gold-500/20">
+                        <i class="fa-solid fa-user-lock"></i>
+                        <span>Employee Portal</span>
+                    </button>
+
+                    <!-- Shown when inside Login or POS -->
+                    <button id="nav-public-btn" onclick="switchView('public')" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all items-center gap-2">
+                        <i class="fa-solid fa-globe"></i>
+                        <span class="hidden sm:inline">Back to Website</span>
+                    </button>
+
+                    <!-- Active Employee Badge (Shown when logged in) -->
+                    <div id="logged-in-badge" class="hidden items-center gap-3 bg-slate-800/90 border border-slate-700 pl-3 pr-2 py-1.5 rounded-xl">
+                        <div class="text-right">
+                            <p id="emp-name-display" class="text-xs font-semibold text-white leading-tight">Staff Name</p>
+                            <p id="emp-role-display" class="text-[10px] text-gold-400 uppercase tracking-wider">Role</p>
+                        </div>
+                        <button onclick="logoutEmployee()" title="Logout Employee" class="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-colors">
+                            <i class="fa-solid fa-power-off text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Public Quick Navigation Bar -->
+            <div id="mobile-public-nav" class="flex md:hidden items-center justify-around py-2.5 border-t border-slate-800 text-xs font-semibold text-slate-300">
+                <button type="button" onclick="navigateToSection('home')" class="hover:text-gold-400 py-1 px-2">Overview</button>
+                <button type="button" onclick="navigateToSection('rooms')" class="hover:text-gold-400 py-1 px-2">Suites & Rooms</button>
+                <button type="button" onclick="navigateToSection('dining-menu')" class="hover:text-gold-400 py-1 px-2">Order Food</button>
+                <button type="button" onclick="openCustomerCartDrawer()" class="text-gold-400 flex items-center gap-1 py-1 px-2">
+                    <i class="fa-solid fa-bell-concierge"></i>
+                    <span>Tray (<span id="mobile-cust-cart-count">0</span>)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= VIEW 1: PUBLIC HOTEL WEBSITE ================= -->
+    <main id="view-public" class="flex-grow">
+        <!-- Hero Banner -->
+        <section id="home" class="relative bg-slate-900 text-white overflow-hidden">
+            <div class="absolute inset-0 opacity-35">
+                <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1920&q=80" 
+                     alt="Grand Horizon Hotel Exterior" 
+                     class="w-full h-full object-cover"
+                     onerror="this.src='https://placehold.co/1920x900/1e293b/d2a359?text=The+Grand+Horizon+Hotel'">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent"></div>
+            </div>
+
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center text-center">
+                <span class="px-4 py-1.5 rounded-full bg-gold-500/20 border border-gold-400/30 text-gold-300 text-xs uppercase tracking-widest font-semibold mb-6">
+                    5-Star Hospitality & Culinary Excellence
+                </span>
+                <h1 class="font-serif text-4xl sm:text-6xl font-bold tracking-tight max-w-4xl leading-tight mb-6">
+                    Timeless Luxury Meets Exquisite Gastronomy
+                </h1>
+                <p class="text-slate-300 text-base sm:text-lg max-w-2xl mb-10 leading-relaxed">
+                    Welcome to The Grand Horizon. Explore our signature chef-curated dining menu, unwind in our panoramic suites, or access our integrated staff billing terminal.
+                </p>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <button type="button" onclick="navigateToSection('dining-menu')" class="bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold px-7 py-3.5 rounded-xl transition-all shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-utensils"></i>
+                        <span>Order Food Now</span>
+                    </button>
+                    <button type="button" onclick="navigateToSection('rooms')" class="bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border border-white/20 font-semibold px-7 py-3.5 rounded-xl transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-bed text-gold-400"></i>
+                        <span>View Suites & Rooms</span>
+                    </button>
+                    <button type="button" onclick="handlePortalClick()" class="bg-slate-900/80 hover:bg-slate-900 text-slate-200 border border-slate-700 font-semibold px-6 py-3.5 rounded-xl transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-cash-register text-gold-400"></i>
+                        <span>Staff Billing Terminal</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Highlights Bar -->
+        <section class="bg-white border-b border-slate-200 py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div class="p-3">
+                    <i class="fa-solid fa-bell-concierge text-gold-600 text-2xl mb-2"></i>
+                    <h3 class="font-bold text-slate-800 text-sm">24/7 Room Service</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Instant In-Suite Dining</p>
+                </div>
+                <div class="p-3">
+                    <i class="fa-solid fa-award text-gold-600 text-2xl mb-2"></i>
+                    <h3 class="font-bold text-slate-800 text-sm">Master Chefs</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Farm-to-Table Ingredients</p>
+                </div>
+                <div class="p-3">
+                    <i class="fa-solid fa-wifi text-gold-600 text-2xl mb-2"></i>
+                    <h3 class="font-bold text-slate-800 text-sm">Smart Suites</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">High-Speed Connectivity</p>
+                </div>
+                <div class="p-3">
+                    <i class="fa-solid fa-file-invoice-dollar text-gold-600 text-2xl mb-2"></i>
+                    <h3 class="font-bold text-slate-800 text-sm">Express Checkout</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Unified Room & Food Billing</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Luxury Suites Section -->
+        <section id="rooms" class="py-16 bg-slate-50 border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row md:items-end justify-between mb-10">
+                    <div>
+                        <span class="text-gold-600 font-bold text-xs uppercase tracking-widest">Accommodations</span>
+                        <h2 class="font-serif text-3xl font-bold text-slate-900 mt-1">Luxury Suites & Tariffs</h2>
+                    </div>
+                    <p class="text-sm text-slate-500 mt-2 md:mt-0">Room tariffs can also be directly added to customer bills in the Employee POS.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Room 1 -->
+                    <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col">
+                        <div class="h-48 bg-slate-200 relative">
+                            <img src="https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80" 
+                                 alt="Deluxe King Room" class="w-full h-full object-cover"
+                                 onerror="this.src='https://placehold.co/600x400/1e293b/ffffff?text=Deluxe+King+Room'">
+                            <span class="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-sm text-gold-400 font-bold text-xs px-3 py-1.5 rounded-lg">
+                                ₹4,500 / Night
+                            </span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-serif font-bold text-xl text-slate-900">Deluxe King Room</h3>
+                                <p class="text-slate-500 text-sm mt-2">Spacious 400 sq.ft room with city skyline views, king-sized plush bed, and complimentary breakfast.</p>
+                            </div>
+                            <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                <span><i class="fa-solid fa-user-group mr-1 text-gold-600"></i> Max 2 Guests</span>
+                                <span><i class="fa-solid fa-mug-hot mr-1 text-gold-600"></i> Free Breakfast</span>
+                            </div>
+                            <div class="mt-4 grid grid-cols-2 gap-2">
+                                <button type="button" onclick="addToCustomerSelfCart('R901')" class="bg-slate-900 hover:bg-gold-500 text-white hover:text-slate-950 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-calendar-check text-gold-400"></i>
+                                    <span>Book Suite</span>
+                                </button>
+                                <button type="button" onclick="selectRoomAndOrderFood('Deluxe Room 101')" class="bg-gold-50 hover:bg-gold-100 text-gold-800 border border-gold-300 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-utensils"></i>
+                                    <span>Order to Room</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Room 2 -->
+                    <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col">
+                        <div class="h-48 bg-slate-200 relative">
+                            <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80" 
+                                 alt="Executive Club Suite" class="w-full h-full object-cover"
+                                 onerror="this.src='https://placehold.co/600x400/1e293b/ffffff?text=Executive+Club+Suite'">
+                            <span class="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-sm text-gold-400 font-bold text-xs px-3 py-1.5 rounded-lg">
+                                ₹7,500 / Night
+                            </span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-serif font-bold text-xl text-slate-900">Executive Club Suite</h3>
+                                <p class="text-slate-500 text-sm mt-2">Includes private lounge access, dedicated workspace, jacuzzi tub, and priority room service.</p>
+                            </div>
+                            <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                <span><i class="fa-solid fa-user-group mr-1 text-gold-600"></i> Max 3 Guests</span>
+                                <span><i class="fa-solid fa-champagne-glasses mr-1 text-gold-600"></i> Lounge Access</span>
+                            </div>
+                            <div class="mt-4 grid grid-cols-2 gap-2">
+                                <button type="button" onclick="addToCustomerSelfCart('R902')" class="bg-slate-900 hover:bg-gold-500 text-white hover:text-slate-950 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-calendar-check text-gold-400"></i>
+                                    <span>Book Suite</span>
+                                </button>
+                                <button type="button" onclick="selectRoomAndOrderFood('Executive Suite 205')" class="bg-gold-50 hover:bg-gold-100 text-gold-800 border border-gold-300 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-utensils"></i>
+                                    <span>Order to Room</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Room 3 -->
+                    <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col">
+                        <div class="h-48 bg-slate-200 relative">
+                            <img src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80" 
+                                 alt="Presidential Horizon Suite" class="w-full h-full object-cover"
+                                 onerror="this.src='https://placehold.co/600x400/1e293b/ffffff?text=Presidential+Suite'">
+                            <span class="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-sm text-gold-400 font-bold text-xs px-3 py-1.5 rounded-lg">
+                                ₹12,500 / Night
+                            </span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-serif font-bold text-xl text-slate-900">Presidential Horizon Suite</h3>
+                                <p class="text-slate-500 text-sm mt-2">Panoramic top-floor luxury with private dining room, personal butler, and chauffeur transfer.</p>
+                            </div>
+                            <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                <span><i class="fa-solid fa-user-group mr-1 text-gold-600"></i> Max 4 Guests</span>
+                                <span><i class="fa-solid fa-crown mr-1 text-gold-600"></i> Butler Service</span>
+                            </div>
+                            <div class="mt-4 grid grid-cols-2 gap-2">
+                                <button type="button" onclick="addToCustomerSelfCart('R903')" class="bg-slate-900 hover:bg-gold-500 text-white hover:text-slate-950 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-calendar-check text-gold-400"></i>
+                                    <span>Book Suite</span>
+                                </button>
+                                <button type="button" onclick="selectRoomAndOrderFood('Presidential Suite 501')" class="bg-gold-50 hover:bg-gold-100 text-gold-800 border border-gold-300 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-utensils"></i>
+                                    <span>Order to Room</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Public Food Menu Section -->
+        <section id="dining-menu" class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-10">
+                    <span class="text-gold-600 font-bold text-xs uppercase tracking-widest">Self-Service Digital Menu</span>
+                    <h2 class="font-serif text-3xl sm:text-4xl font-bold text-slate-900 mt-1">Order Food Directly From Your Table or Suite</h2>
+                    <p class="text-slate-500 text-sm mt-2">Select your favorite dishes below to place an instant order with our kitchen. Your order is sent directly to our staff for preparation and billing.</p>
+                </div>
+
+                <!-- Active Customer Orders Status Banner (Shown when customer places an order) -->
+                <div id="customer-active-orders-box" class="hidden mb-10 bg-gold-50 border border-gold-300 rounded-2xl p-5 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gold-200">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-xl bg-gold-500 text-slate-950 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-fire-burner"></i>
+                            </span>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-sm">Your Live Kitchen Orders</h3>
+                                <p class="text-xs text-slate-600">Track the status of your self-service orders below</p>
+                            </div>
+                        </div>
+                        <button onclick="openCustomerCartDrawer()" class="text-xs font-bold text-gold-800 hover:underline flex items-center gap-1">
+                            <span>Order More Items</span>
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                    <div id="customer-active-orders-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Category Filter Pills & Search -->
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+                    <div id="public-category-pills" class="flex flex-wrap items-center justify-center gap-2">
+                        <!-- Dynamically populated -->
+                    </div>
+                    <div class="relative w-full md:w-72">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="public-menu-search" oninput="renderPublicMenu()" placeholder="Search dishes or dietary type..."
+                               class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                    </div>
+                </div>
+
+                <!-- Menu Grid -->
+                <div id="public-menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Dynamically populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Floating Customer Order Tray Bar -->
+        <div id="floating-cust-cart" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-xl bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-gold-500/40 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-gold-500 text-slate-950 flex items-center justify-center font-bold text-lg shadow">
+                    <i class="fa-solid fa-utensils"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-300 font-medium"><span id="float-cust-count" class="font-bold text-gold-400">0</span> Items in Your Order Tray</p>
+                    <p class="text-base font-bold text-white">Estimated Total: <span id="float-cust-total" class="text-gold-400">₹0.00</span> <span class="text-[10px] font-normal text-slate-400">(+ taxes)</span></p>
+                </div>
+            </div>
+            <button onclick="openCustomerCartDrawer()" class="bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition-all shadow flex items-center gap-2 whitespace-nowrap">
+                <span>Review & Place Order</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- ================= MODAL / DRAWER: CUSTOMER SELF-ORDER TRAY ================= -->
+    <div id="cust-order-modal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-end">
+        <div class="bg-white w-full max-w-md h-full flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+            <!-- Drawer Header -->
+            <div class="bg-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gold-500 text-slate-950 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-bell-concierge"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-serif font-bold text-lg leading-none">Your Food Order Tray</h3>
+                        <p class="text-[11px] text-gold-400 mt-1">Direct Kitchen & Room Service Order</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="cancel-tray-btn" type="button" onclick="cancelEntireCustomerTray()" class="hidden px-2.5 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white text-[11px] font-bold transition-colors items-center gap-1" title="Clear all items from tray">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Clear Tray</span>
+                    </button>
+                    <button onclick="closeCustomerCartDrawer()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selected Dishes List & Active Orders inside Tray -->
+            <div class="p-5 flex-1 overflow-y-auto space-y-5">
+                <div id="cust-drawer-items" class="divide-y divide-slate-100">
+                    <!-- Populated via JS -->
+                </div>
+
+                <!-- Submitted Kitchen Orders Inside My Order Tray (With Cancel Option) -->
+                <div id="cust-drawer-active-orders" class="hidden pt-4 border-t border-slate-200 space-y-2.5">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Customer Details Form & Submit -->
+            <form onsubmit="submitCustomerSelfOrder(event)" class="p-5 bg-slate-50 border-t border-slate-200 space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2 sm:col-span-1">
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Your Name *</label>
+                        <input type="text" id="self-cust-name" required placeholder="e.g., Rohan Verma"
+                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                    </div>
+                    <div class="col-span-2 sm:col-span-1">
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Mobile Number *</label>
+                        <input type="tel" id="self-cust-phone" required placeholder="e.g., 9876543210"
+                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Dining Option *</label>
+                        <select id="self-service-type" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                            <option value="Dine-In">Restaurant Table</option>
+                            <option value="Room Service">In-Suite Room Service</option>
+                            <option value="Takeaway">Self Pickup / Parcel</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Table / Suite No. *</label>
+                        <input type="text" id="self-table-room" required placeholder="e.g., Table 7 or Room 405"
+                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Cooking Instructions (Optional)</label>
+                    <input type="text" id="self-order-notes" placeholder="e.g., Less spicy, no onions, serve hot..."
+                           class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                </div>
+
+                <!-- Summary Breakdown -->
+                <div class="pt-2 border-t border-slate-200 text-xs space-y-1">
+                    <div class="flex justify-between text-slate-500">
+                        <span>Items Subtotal</span>
+                        <span id="self-subtotal" class="font-medium text-slate-800">₹0.00</span>
+                    </div>
+                    <div class="flex justify-between text-slate-500">
+                        <span>Estimated GST & Service Tax (7.5%)</span>
+                        <span id="self-tax">₹0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm font-bold text-slate-900 pt-1">
+                        <span>Estimated Total</span>
+                        <span id="self-grand-total" class="text-gold-700 text-base">₹0.00</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="cancelEntireCustomerTray()" class="col-span-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-ban"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <button type="submit" class="col-span-2 bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Send Order to Kitchen</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= VIEW 2: SEPARATE EMPLOYEE LOGIN PAGE ================= -->
+    <section id="view-login" class="hidden flex-grow bg-slate-900 flex items-center justify-center p-4 py-12 relative overflow-hidden">
+        <!-- Decorative background accents -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-gold-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 z-10">
+            <!-- Header -->
+            <div class="bg-slate-950 p-8 text-center border-b border-slate-800">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-slate-950 mx-auto mb-4 shadow-lg">
+                    <i class="fa-solid fa-user-shield text-2xl"></i>
+                </div>
+                <h2 class="font-serif text-2xl font-bold text-white">Employee Portal Login</h2>
+                <p class="text-slate-400 text-xs mt-1">Sign in to access Customer Billing & Menu Management</p>
+            </div>
+
+            <!-- Form -->
+            <form id="employee-login-form" onsubmit="handleEmployeeLogin(event)" class="p-8 space-y-5">
+                <div id="login-error-box" class="hidden bg-red-50 border border-red-200 text-red-700 text-xs font-medium px-4 py-3 rounded-xl flex items-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation text-red-500"></i>
+                    <span id="login-error-text">Invalid Employee ID or PIN.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Employee Username / ID</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-id-badge absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="login-username" required placeholder="e.g.,EMP01 or cashier"
+                               class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 focus:bg-white transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Security Passcode / PIN</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="password" id="login-password" required placeholder="Enter PIN"
+                               class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 focus:bg-white transition-all">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
+                    <span>Access Billing Terminal</span>
+                    <i class="fa-solid fa-arrow-right text-gold-400"></i>
+                </button>
+
+                <!-- Quick Demo Credentials Fillers -->
+                <div class="pt-5 border-t border-slate-100">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 text-center mb-3">Quick Demo Staff Accounts (Click to Autofill)</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="fillDemoCredentials('EMP01', '1234')" class="p-2 rounded-xl border border-slate-200 hover:border-gold-500 hover:bg-gold-50/50 text-left transition-all">
+                            <span class="block text-xs font-bold text-slate-800">EMP01</span>
+                            <span class="block text-[10px] text-slate-500">Cashier • 1234</span>
+                        </button>
+                        <button type="button" onclick="fillDemoCredentials('ADMIN', '9999')" class="p-2 rounded-xl border border-slate-200 hover:border-gold-500 hover:bg-gold-50/50 text-left transition-all">
+                            <span class="block text-xs font-bold text-slate-800">ADMIN</span>
+                            <span class="block text-[10px] text-slate-500">Manager • 9999</span>
+                        </button>
+                        <button type="button" onclick="fillDemoCredentials('CHEF', '5678')" class="p-2 rounded-xl border border-slate-200 hover:border-gold-500 hover:bg-gold-50/50 text-left transition-all">
+                            <span class="block text-xs font-bold text-slate-800">CHEF</span>
+                            <span class="block text-[10px] text-slate-500">Kitchen • 5678</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- ================= VIEW 3: EMPLOYEE POS & BILLING DASHBOARD ================= -->
+    <section id="view-pos" class="hidden flex-grow bg-slate-100">
+        <!-- Sub-navigation Bar for Staff Operations -->
+        <div class="bg-white border-b border-slate-200 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4 py-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="switchPosTab('billing')" id="pos-tab-billing" class="px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-cash-register text-gold-400"></i>
+                        <span>New Customer Bill (POS)</span>
+                    </button>
+                    <button onclick="switchPosTab('orders')" id="pos-tab-orders" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-bell-concierge text-amber-500"></i>
+                        <span>Customer Self-Orders</span>
+                        <span id="pending-orders-badge" class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 font-bold">0</span>
+                    </button>
+                    <button onclick="switchPosTab('menu')" id="pos-tab-menu" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-utensils"></i>
+                        <span>Manage Food Menu</span>
+                    </button>
+                    <button onclick="switchPosTab('history')" id="pos-tab-history" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Generated Bills</span>
+                        <span id="history-count-badge" class="px-2 py-0.5 text-xs rounded-full bg-gold-100 text-gold-800 font-bold">0</span>
+                    </button>
+                    <button onclick="switchPosTab('customers')" id="pos-tab-customers" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-users text-emerald-600"></i>
+                        <span>Daily Customers & Cloud DB</span>
+                        <span id="customers-count-badge" class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-800 font-bold">0</span>
+                    </button>
+                </div>
+
+                <!-- Today's Revenue Summary Pill -->
+                <div class="flex items-center gap-4 bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-200 text-xs">
+                    <div class="flex items-center gap-2">
+                        <div>
+                            <span class="text-slate-400 font-medium">Today's Revenue:</span>
+                            <span id="pos-today-revenue" class="font-bold text-emerald-600 ml-1 text-sm">₹0.00</span>
+                        </div>
+                        <button onclick="clearAllGeneratedBills()" title="Reset Revenue & Clear All Bills to ₹0.00" class="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-2 py-0.5 rounded-lg font-semibold transition-colors">
+                            Reset ₹0
+                        </button>
+                    </div>
+                    <div class="h-4 w-px bg-slate-200"></div>
+                    <div>
+                        <span class="text-slate-400 font-medium">Active Menu Items:</span>
+                        <span id="pos-total-items" class="font-bold text-slate-800 ml-1">0</span>
+                    </div>
+                    <div class="h-4 w-px bg-slate-200 hidden sm:block"></div>
+                    <div class="hidden sm:flex items-center gap-1.5" title="Connected Cloud Node ID">
+                        <i class="fa-solid fa-cloud text-emerald-500"></i>
+                        <span id="pos-cloud-uid" class="font-mono text-[10px] text-slate-500">Syncing...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3A: POS BILLING GENERATOR -->
+        <div id="pos-content-billing" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- LEFT 7 COLS: Food & Room Item Selector -->
+                <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">Select Items to Bill</h3>
+                            <p class="text-xs text-slate-500">Tap any dish or room tariff to add to the customer's invoice</p>
+                        </div>
+                        <!-- Search inside POS -->
+                        <div class="relative w-full sm:w-64">
+                            <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="text" id="pos-search-input" oninput="renderPosMenuGrid()" placeholder="Search item name or code..."
+                                   class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                        </div>
+                    </div>
+
+                    <!-- Category Filter Buttons -->
+                    <div id="pos-category-pills" class="flex items-center gap-2 overflow-x-auto py-3 mb-2">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <!-- Clickable Item Cards Grid -->
+                    <div id="pos-items-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[540px] overflow-y-auto pr-1">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- RIGHT 5 COLS: Customer Details & Live Bill Calculator -->
+                <div class="lg:col-span-5 bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col">
+                    <!-- Bill Top Bar -->
+                    <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-file-invoice text-gold-400 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-sm leading-none">Customer Invoice Builder</h3>
+                                <span id="live-invoice-number" class="text-[11px] text-slate-400 font-mono">INV-2026-1001</span>
+                            </div>
+                        </div>
+                        <button onclick="clearCurrentCart()" class="text-xs bg-slate-800 hover:bg-red-500/20 hover:text-red-300 text-slate-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+
+                    <!-- Customer Information Form -->
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-2 gap-3">
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Customer Full Name *</label>
+                            <input type="text" id="bill-cust-name" placeholder="e.g., Rahul Sharma"
+                                   class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Phone Number</label>
+                            <input type="tel" id="bill-cust-phone" placeholder="e.g., +91 98765 43210"
+                                   class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Service Type</label>
+                            <select id="bill-service-type" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                                <option value="Dine-In">Restaurant Dine-In</option>
+                                <option value="Room Service">In-Room Dining</option>
+                                <option value="Room Checkout">Suite Checkout + Dining</option>
+                                <option value="Takeaway">Parcel / Takeaway</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Table / Room No. *</label>
+                            <input type="text" id="bill-table-room" placeholder="e.g., Table 4 or Room 302"
+                                   class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                        </div>
+                    </div>
+
+                    <!-- Cart Line Items -->
+                    <div id="pos-cart-list" class="p-4 divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <!-- Discount, Tax & Payment Controls -->
+                    <div class="p-4 bg-slate-50 border-t border-slate-200 space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Discount (%)</label>
+                                <input type="number" id="bill-discount" min="0" max="100" value="0" oninput="renderPosCart()"
+                                       class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Payment Mode</label>
+                                <select id="bill-payment-mode" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                                    <option value="UPI / QR Scan">UPI / QR Scan</option>
+                                    <option value="Credit / Debit Card">Credit / Debit Card</option>
+                                    <option value="Cash">Cash Payment</option>
+                                    <option value="Company / Corporate">Corporate Account</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Calculation Breakdown -->
+                        <div class="space-y-1.5 pt-2 border-t border-slate-200 text-xs">
+                            <div class="flex justify-between text-slate-600">
+                                <span>Subtotal</span>
+                                <span id="calc-subtotal" class="font-medium">₹0.00</span>
+                            </div>
+                            <div class="flex justify-between text-emerald-600">
+                                <span>Discount Applied</span>
+                                <span id="calc-discount">- ₹0.00</span>
+                            </div>
+                            <div class="flex justify-between text-slate-600">
+                                <span>GST (5%) & Service Charge (2.5%)</span>
+                                <span id="calc-tax">₹0.00</span>
+                            </div>
+                            <div class="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
+                                <span>Grand Total</span>
+                                <span id="calc-grand-total" class="text-gold-700 text-lg">₹0.00</span>
+                            </div>
+                        </div>
+
+                        <button onclick="generateFinalBill()" class="w-full bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
+                            <i class="fa-solid fa-receipt"></i>
+                            <span>Generate & Print Customer Bill</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAB 3D: LIVE CUSTOMER SELF-ORDERS QUEUE -->
+        <div id="pos-content-orders" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Incoming Customer Self-Service Orders</h3>
+                        <p class="text-xs text-slate-500">Orders placed by guests directly from the website menu. Load any order into the POS terminal to generate their final bill.</p>
+                    </div>
+                    <button onclick="switchView('public'); setTimeout(() => document.getElementById('dining-menu').scrollIntoView({behavior:'smooth'}), 100);" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl transition-colors flex items-center gap-2 self-start sm:self-auto">
+                        <i class="fa-solid fa-external-link-alt"></i>
+                        <span>Test Customer Order Page</span>
+                    </button>
+                </div>
+
+                <div id="pos-customer-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
+                    <!-- Dynamically populated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3B: FOOD MENU MANAGER (ADD / REMOVE ITEMS) -->
+        <div id="pos-content-menu" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Add New Dish Form -->
+                <div class="lg:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-fit">
+                    <h3 class="font-bold text-slate-900 text-lg mb-1">Add New Menu Item</h3>
+                    <p class="text-xs text-slate-500 mb-5">New items immediately appear on both the Public Website and Employee POS.</p>
+
+                    <form id="add-menu-form" onsubmit="handleAddNewMenuItem(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Item / Dish Name *</label>
+                            <input type="text" id="new-item-name" required placeholder="e.g., Malabar Prawn Curry"
+                                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Category *</label>
+                                <select id="new-item-category" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500">
+                                    <option value="Starters">Starters</option>
+                                    <option value="Main Course">Main Course</option>
+                                    <option value="Breads & Rice">Breads & Rice</option>
+                                    <option value="Desserts">Desserts</option>
+                                    <option value="Beverages">Beverages</option>
+                                    <option value="Room Tariffs">Room Tariffs</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Price (₹) *</label>
+                                <input type="number" id="new-item-price" required min="1" placeholder="e.g., 420"
+                                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Dietary Preference</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 text-xs font-medium">
+                                    <input type="radio" name="diet-type" value="Veg" checked class="accent-emerald-600">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span>
+                                    <span>Vegetarian / Standard</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 text-xs font-medium">
+                                    <input type="radio" name="diet-type" value="Non-Veg" class="accent-red-600">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-600 inline-block"></span>
+                                    <span>Non-Vegetarian</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Short Description *</label>
+                            <textarea id="new-item-desc" required rows="2" placeholder="Describe ingredients or serving size..."
+                                      class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm shadow">
+                            <i class="fa-solid fa-plus text-gold-400"></i>
+                            <span>Add Item to Hotel Menu</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Existing Menu Table -->
+                <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">Current Hotel Catalog</h3>
+                            <p class="text-xs text-slate-500">Manage pricing and availability across the hotel</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                    <th class="py-3 px-4">Item Name</th>
+                                    <th class="py-3 px-4">Category</th>
+                                    <th class="py-3 px-4">Type</th>
+                                    <th class="py-3 px-4">Price</th>
+                                    <th class="py-3 px-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="manage-menu-tbody" class="divide-y divide-slate-100 text-sm">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3C: GENERATED BILLS HISTORY -->
+        <div id="pos-content-history" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Customer Billing History</h3>
+                        <p class="text-xs text-slate-500">View and reprint past customer invoices generated during this session</p>
+                    </div>
+                    <button onclick="clearAllGeneratedBills()" class="text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5 self-start sm:self-auto">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Clear Bills & Reset Revenue to ₹0</span>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                <th class="py-3.5 px-4">Invoice ID</th>
+                                <th class="py-3.5 px-4">Date & Time</th>
+                                <th class="py-3.5 px-4">Customer</th>
+                                <th class="py-3.5 px-4">Table / Room</th>
+                                <th class="py-3.5 px-4">Payment Mode</th>
+                                <th class="py-3.5 px-4">Billed By</th>
+                                <th class="py-3.5 px-4">Total Amount</th>
+                                <th class="py-3.5 px-4 text-right">Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bills-history-tbody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3E: DAILY CUSTOMERS REGISTRY & CLOUDFLARE / CLOUD DB CONNECTOR -->
+        <div id="pos-content-customers" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+            <!-- Top Row: Cloud Database Architecture & Cloudflare D1 / Webhook Sync -->
+            <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-800">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="space-y-1.5 max-w-2xl">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold uppercase tracking-wider">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>Real-Time Cloud Database Active</span>
+                        </div>
+                        <h3 class="font-serif text-2xl font-bold text-white">Daily Customer Cloud Storage & Cloudflare D1 Bridge</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            All daily customer details, self-service orders, and bills are automatically stored in the built-in <strong>Real-Time Cloud NoSQL Database</strong> (`dailyCustomers` collection). You can also connect an external <strong>Cloudflare Worker + D1 SQL / KV / Supabase REST URL</strong> below to mirror every customer record in real time.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="downloadReadyHtmlFile()" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow transition-all">
+                            <i class="fa-brands fa-github text-base text-gold-400"></i>
+                            <span>Download index.html for GitHub</span>
+                        </button>
+                        <button onclick="exportDailyCustomersCSV()" class="bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow transition-all">
+                            <i class="fa-solid fa-file-csv"></i>
+                            <span>Export Today's Customers (CSV)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GitHub Live Hosting & Auto-Deploy Guide -->
+                <div class="mt-5 pt-5 border-t border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div class="bg-slate-800/70 border border-slate-700/80 rounded-xl p-4">
+                        <div class="flex items-center gap-2 text-gold-400 font-bold mb-1.5">
+                            <span class="w-5 h-5 rounded-full bg-gold-500/20 text-gold-300 flex items-center justify-center text-[11px]">1</span>
+                            <span>Create GitHub Repository</span>
+                        </div>
+                        <p class="text-slate-300 text-[11px] leading-relaxed">
+                            Click <strong>"Download index.html for GitHub"</strong> above. Go to <span class="text-white font-mono">github.com/new</span>, create a repository (e.g., <span class="text-gold-300 font-mono">grand-horizon-hotel</span>), and upload <span class="text-white font-mono">index.html</span>.
+                        </p>
+                    </div>
+                    <div class="bg-slate-800/70 border border-slate-700/80 rounded-xl p-4">
+                        <div class="flex items-center gap-2 text-gold-400 font-bold mb-1.5">
+                            <span class="w-5 h-5 rounded-full bg-gold-500/20 text-gold-300 flex items-center justify-center text-[11px]">2</span>
+                            <span>Go Live (GitHub / Cloudflare Pages)</span>
+                        </div>
+                        <p class="text-slate-300 text-[11px] leading-relaxed">
+                            In your GitHub repo, open <strong>Settings → Pages</strong>, set Branch to <span class="text-white font-mono">main</span> and click <strong>Save</strong> (or connect the repo to <strong>Cloudflare Pages</strong>). Your live URL will be ready in 60 seconds!
+                        </p>
+                    </div>
+                    <div class="bg-slate-800/70 border border-slate-700/80 rounded-xl p-4">
+                        <div class="flex items-center gap-2 text-gold-400 font-bold mb-1.5">
+                            <span class="w-5 h-5 rounded-full bg-gold-500/20 text-gold-300 flex items-center justify-center text-[11px]">3</span>
+                            <span>Push Future Updates Instantly</span>
+                        </div>
+                        <p class="text-slate-300 text-[11px] leading-relaxed">
+                            Whenever you edit <span class="text-white font-mono">index.html</span>, run <span class="text-emerald-300 font-mono">git add . && git commit -m "update" && git push</span> (or edit directly on GitHub) and your live website updates automatically.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Optional External Cloudflare Worker / D1 / REST Webhook Input -->
+                <div class="mt-5 pt-5 border-t border-slate-800 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                    <div class="md:col-span-6">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gold-400 mb-1">
+                            Optional Cloudflare Worker / D1 API Endpoint URL (Webhook Mirror)
+                        </label>
+                        <input type="url" id="cf-worker-url" placeholder="https://hotel-db.your-subdomain.workers.dev/api/customers"
+                               class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                            Bearer / API Secret Token (Optional)
+                        </label>
+                        <input type="password" id="cf-worker-token" placeholder="cf_d1_secret_..."
+                               class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500">
+                    </div>
+                    <div class="md:col-span-3 flex gap-2">
+                        <button type="button" onclick="saveCloudflareEndpointConfig()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-semibold py-2 px-3 rounded-xl text-xs transition-all">
+                            <i class="fa-solid fa-plug-circle-check text-emerald-400 mr-1"></i> Save Endpoint
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Grid: Add Walk-In Customer + Daily Customers Directory -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left 4 Cols: Manual Customer Check-In / Registration -->
+                <div class="lg:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-fit">
+                    <h3 class="font-bold text-slate-900 text-lg mb-1">Register Daily Customer</h3>
+                    <p class="text-xs text-slate-500 mb-5">Log a walk-in guest or suite check-in directly into today's cloud registry. (Guests who order food or get billed are added automatically!)</p>
+
+                    <form id="add-customer-form" onsubmit="handleManualCustomerAdd(event)" class="space-y-3.5">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Customer Full Name *</label>
+                            <input type="text" id="reg-cust-name" required placeholder="e.g., Karthik Subramanian"
+                                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Mobile Number *</label>
+                                <input type="tel" id="reg-cust-phone" required placeholder="+91 98765 43210"
+                                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Room / Table No. *</label>
+                                <input type="text" id="reg-cust-room" required placeholder="Suite 304 / Table 2"
+                                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Visit Type</label>
+                                <select id="reg-cust-type" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                                    <option value="Suite Guest">Suite Stay Guest</option>
+                                    <option value="Dine-In">Fine Dining Guest</option>
+                                    <option value="Corporate">Corporate Event</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">ID Proof / GST Note</label>
+                                <input type="text" id="reg-cust-idproof" placeholder="Aadhaar / Passport"
+                                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-xs shadow">
+                            <i class="fa-solid fa-cloud-arrow-up text-gold-400"></i>
+                            <span>Save Customer to Cloud DB</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right 8 Cols: Live Daily Customers Table -->
+                <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">Daily Customer Cloud Log</h3>
+                            <p class="text-xs text-slate-500">Real-time directory of all customers, visit timestamps, orders, and total spend</p>
+                        </div>
+                        <div class="relative w-full sm:w-64">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="text" id="daily-cust-search" oninput="renderDailyCustomersTable()" placeholder="Search name, phone, or room..."
+                                   class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                    <th class="py-3.5 px-4">Customer Details</th>
+                                    <th class="py-3.5 px-4">Date & Last Seen</th>
+                                    <th class="py-3.5 px-4">Room / Table</th>
+                                    <th class="py-3.5 px-4">Activity</th>
+                                    <th class="py-3.5 px-4">Total Spend</th>
+                                    <th class="py-3.5 px-4 text-right">Quick Bill</th>
+                                </tr>
+                            </thead>
+                            <tbody id="daily-customers-tbody" class="divide-y divide-slate-100 text-xs">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= MODAL: PRINTABLE CUSTOMER RECEIPT ================= -->
+    <div id="receipt-modal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div id="receipt-card" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 my-8">
+            <!-- Receipt Header -->
+            <div class="text-center border-b border-dashed border-slate-300 pb-4">
+                <h2 class="font-serif font-bold text-xl text-slate-900 tracking-wide">THE GRAND HORIZON</h2>
+                <p class="text-xs text-slate-500">Luxury Hotel & Fine Dining Restaurant</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">MG Road, Hospitality District • GSTIN: 33AABCT1234F1Z5</p>
+                <p class="text-[11px] text-slate-400">Tel: +91 44 2819 4000</p>
+            </div>
+
+            <!-- Invoice Meta Details -->
+            <div class="py-3 border-b border-dashed border-slate-300 text-xs space-y-1">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Invoice No:</span>
+                    <span id="rcpt-id" class="font-mono font-bold text-slate-800">INV-2026-1001</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Date & Time:</span>
+                    <span id="rcpt-date" class="text-slate-800">10 Nov 2026, 10:30 AM</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Customer Name:</span>
+                    <span id="rcpt-cust" class="font-bold text-slate-800">Walk-in Guest</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Phone:</span>
+                    <span id="rcpt-phone" class="text-slate-800">N/A</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Service / Location:</span>
+                    <span id="rcpt-location" class="font-semibold text-slate-800">Dine-In (Table 4)</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Cashier / Staff:</span>
+                    <span id="rcpt-staff" class="text-slate-800">EMP01</span>
+                </div>
+            </div>
+
+            <!-- Billed Items Table -->
+            <div class="py-3 border-b border-dashed border-slate-300">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="text-slate-400 border-b border-slate-100 text-left">
+                            <th class="pb-1.5 font-semibold">Item</th>
+                            <th class="pb-1.5 font-semibold text-center">Qty</th>
+                            <th class="pb-1.5 font-semibold text-right">Price</th>
+                            <th class="pb-1.5 font-semibold text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rcpt-items-tbody" class="divide-y divide-slate-50">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totals Summary -->
+            <div class="py-3 border-b border-dashed border-slate-300 text-xs space-y-1.5">
+                <div class="flex justify-between text-slate-600">
+                    <span>Subtotal:</span>
+                    <span id="rcpt-subtotal">₹0.00</span>
+                </div>
+                <div class="flex justify-between text-emerald-600">
+                    <span>Discount:</span>
+                    <span id="rcpt-discount">- ₹0.00</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                    <span>GST (5%) + Service Tax (2.5%):</span>
+                    <span id="rcpt-tax">₹0.00</span>
+                </div>
+                <div class="flex justify-between text-base font-bold text-slate-900 pt-1.5 border-t border-slate-200">
+                    <span>NET PAYABLE:</span>
+                    <span id="rcpt-total">₹0.00</span>
+                </div>
+                <div class="flex justify-between text-[11px] text-slate-500 pt-1">
+                    <span>Payment Method:</span>
+                    <span id="rcpt-payment" class="font-semibold text-slate-700">UPI / QR Scan</span>
+                </div>
+            </div>
+
+            <!-- Thank You Footer -->
+            <div class="text-center pt-4">
+                <p class="text-xs font-semibold text-slate-700">Thank You for Visiting The Grand Horizon!</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">We hope to welcome you again soon.</p>
+            </div>
+
+            <!-- Modal Action Buttons (Hidden on Print) -->
+            <div class="no-print mt-6 flex gap-3">
+                <button onclick="window.print()" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow transition-all">
+                    <i class="fa-solid fa-print text-gold-400"></i>
+                    <span>Print Bill</span>
+                </button>
+                <button onclick="closeReceiptModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition-all">
+                    Close Window
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= AI CONCIERGE & POS ASSISTANT CHATBOT ================= -->
+    <div id="ai-chatbot-wrapper" class="fixed bottom-5 right-5 z-40 no-print">
+        <!-- Floating Launcher Button -->
+        <button id="ai-chat-toggle-btn" onclick="toggleAiChat()" class="bg-slate-900 hover:bg-slate-800 text-white border-2 border-gold-400 rounded-full p-4 shadow-2xl flex items-center gap-2.5 transition-all hover:scale-105 group">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-slate-950 flex items-center justify-center font-bold text-base shadow">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="text-left pr-2 hidden sm:block">
+                <span class="block text-[10px] uppercase tracking-wider text-gold-400 font-bold leading-none">AI Concierge</span>
+                <span class="block text-xs font-bold text-white mt-0.5">Horizon Assist</span>
+            </div>
+        </button>
+
+        <!-- Chat Window Panel -->
+        <div id="ai-chat-panel" class="hidden w-[92vw] sm:w-96 h-[530px] max-h-[82vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 text-slate-950 flex items-center justify-center font-bold shadow">
+                        <i class="fa-solid fa-robot text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-serif font-bold text-base leading-none">Horizon AI Concierge</h4>
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </div>
+                        <p class="text-[11px] text-gold-400 mt-1">Menu, Room Booking & Billing Assistant</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="resetAiChat()" title="Reset Conversation" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs transition-colors">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                    <button onclick="toggleAiChat()" title="Minimize Chat" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs transition-colors">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Suggestion Chips -->
+            <div class="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+                <button type="button" onclick="sendQuickAiPrompt('Recommend top Vegetarian dishes')" class="px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-gold-500 text-slate-700 whitespace-nowrap font-medium transition-colors">
+                    🥗 Veg Dishes
+                </button>
+                <button type="button" onclick="sendQuickAiPrompt('Compare your Luxury Suites and prices')" class="px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-gold-500 text-slate-700 whitespace-nowrap font-medium transition-colors">
+                    🛏️ Compare Suites
+                </button>
+                <button type="button" onclick="sendQuickAiPrompt('Suggest a 3-course dinner under ₹1200')" class="px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-gold-500 text-slate-700 whitespace-nowrap font-medium transition-colors">
+                    🍽️ Dinner Combo
+                </button>
+                <button type="button" onclick="sendQuickAiPrompt('How do I order food or generate a customer bill?')" class="px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-gold-500 text-slate-700 whitespace-nowrap font-medium transition-colors">
+                    🧾 Billing Help
+                </button>
+            </div>
+
+            <!-- Messages Scroll Container -->
+            <div id="ai-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50 text-xs">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- Input Form -->
+            <form onsubmit="handleAiChatSubmit(event)" class="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
+                <input type="text" id="ai-chat-input" placeholder="Ask about dishes, suites, or billing..."
+                       class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold-500">
+                <button type="submit" id="ai-chat-send-btn" class="bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold w-10 h-10 rounded-xl flex items-center justify-center shadow transition-all">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= TOAST NOTIFICATION CONTAINER ================= -->
+    <div id="toast-container" class="fixed bottom-24 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="bg-slate-950 text-slate-400 py-8 border-t border-slate-800 mt-auto no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+            <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded bg-gold-500 text-slate-950 font-serif font-bold flex items-center justify-center">G</span>
+                <span class="text-white font-semibold">The Grand Horizon Hotel & POS</span>
+            </div>
+            <p>© 2026 The Grand Horizon Hospitality Group. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- ================= APPLICATION JAVASCRIPT ================= -->
+    <script>
+        // 1. Authorized Employees Database
+        const EMPLOYEES = [
+            { id: 'EMP01', pin: '1234', name: 'Arjun Mehta', role: 'Senior Cashier' },
+            { id: 'ADMIN', pin: '9999', name: 'Priya Nair', role: 'General Manager' },
+            { id: 'CHEF',  pin: '5678', name: 'Chef Vikram', role: 'Executive Chef' }
+        ];
+
+        // 2. Initial Hotel Food Menu & Room Tariffs Data
+        let menuItems = [
+            {
+                id: 'M101',
+                name: 'Truffle Mushroom Arancini',
+                category: 'Starters',
+                price: 380,
+                type: 'Veg',
+                desc: 'Crispy risotto spheres stuffed with wild mushrooms, parmesan, and truffle oil.'
+            },
+            {
+                id: 'M102',
+                name: 'Tandoori Murgh Tikka',
+                category: 'Starters',
+                price: 460,
+                type: 'Non-Veg',
+                desc: 'Charcoal-grilled chicken morsels marinated in Kashmiri chili and hung curd.'
+            },
+            {
+                id: 'M103',
+                name: 'Crispy Lotus Stem Honey Chilli',
+                category: 'Starters',
+                price: 340,
+                type: 'Veg',
+                desc: 'Wok-tossed crunchy lotus stem glazed with toasted sesame and organic honey.'
+            },
+            {
+                id: 'M201',
+                name: 'Paneer Lababdar Royal',
+                category: 'Main Course',
+                price: 490,
+                type: 'Veg',
+                desc: 'Cottage cheese cubes simmered in a velvety tomato, cashew, and fenugreek gravy.'
+            },
+            {
+                id: 'M202',
+                name: 'Old Delhi Butter Chicken',
+                category: 'Main Course',
+                price: 580,
+                type: 'Non-Veg',
+                desc: 'Pulled tandoori chicken cooked in slow-simmered buttery makhani sauce.'
+            },
+            {
+                id: 'M203',
+                name: 'Grilled Norwegian Salmon',
+                category: 'Main Course',
+                price: 950,
+                type: 'Non-Veg',
+                desc: 'Pan-seared salmon fillet with herb mash, asparagus, and lemon caper butter.'
+            },
+            {
+                id: 'M301',
+                name: 'Dum Pukht Mutton Biryani',
+                category: 'Breads & Rice',
+                price: 640,
+                type: 'Non-Veg',
+                desc: 'Fragrant aged basmati rice slow-cooked with tender spiced lamb and saffron.'
+            },
+            {
+                id: 'M302',
+                name: 'Assorted Artisan Naan Basket',
+                category: 'Breads & Rice',
+                price: 220,
+                type: 'Veg',
+                desc: 'Basket of butter naan, garlic naan, and flaky laccha paratha.'
+            },
+            {
+                id: 'M401',
+                name: 'Saffron Pistachio Rasmalai',
+                category: 'Desserts',
+                price: 280,
+                type: 'Veg',
+                desc: 'Soft cottage cheese dumplings soaked in chilled saffron cardamom milk.'
+            },
+            {
+                id: 'M402',
+                name: 'Belgian Dark Chocolate Lava Cake',
+                category: 'Desserts',
+                price: 350,
+                type: 'Veg',
+                desc: 'Warm molten center cake served with Madagascar vanilla bean gelato.'
+            },
+            {
+                id: 'M501',
+                name: 'Signature Virgin Mojito Pitcher',
+                category: 'Beverages',
+                price: 240,
+                type: 'Veg',
+                desc: 'Fresh muddled mint leaves, lime wedges, and sparkling cane soda.'
+            },
+            {
+                id: 'M502',
+                name: 'Artisanal Estate Filter Coffee',
+                category: 'Beverages',
+                price: 160,
+                type: 'Veg',
+                desc: 'South Indian single-estate Arabica decoction brewed with frothy milk.'
+            },
+            {
+                id: 'R901',
+                name: 'Deluxe King Room (1 Night)',
+                category: 'Room Tariffs',
+                price: 4500,
+                type: 'Veg',
+                desc: 'Standard nightly room tariff including complimentary buffet breakfast.'
+            },
+            {
+                id: 'R902',
+                name: 'Executive Club Suite (1 Night)',
+                category: 'Room Tariffs',
+                price: 7500,
+                type: 'Veg',
+                desc: 'Suite accommodation with club lounge access and evening refreshments.'
+            },
+            {
+                id: 'R903',
+                name: 'Presidential Horizon Suite (1 Night)',
+                category: 'Room Tariffs',
+                price: 12500,
+                type: 'Veg',
+                desc: 'Top-floor panoramic luxury suite with personal butler and chauffeur service.'
+            }
+        ];
+
+        // 3. Application State
+        let currentEmployee = null;
+        let selectedPublicCategory = 'All';
+        let selectedPosCategory = 'All';
+        let currentCart = []; // [{ item, qty }]
+        let activeOrderBeingBilled = null; // tracks if a self-order is loaded into POS
+        let customerSelfCart = []; // [{ item, qty }] for public customer ordering
+        let orderCounter = 501;
+        let customerOrders = [];
+        let invoiceCounter = 1001;
+        let generatedBills = [];
+
+        // Daily Customers Cloud Registry State (Starts empty so revenue & spend only increase when billed)
+        let dailyCustomers = [];
+        let cloudflareWebhookUrl = '';
+        let cloudflareWebhookToken = '';
+
+        const CATEGORIES = ['All', 'Starters', 'Main Course', 'Breads & Rice', 'Desserts', 'Beverages', 'Room Tariffs'];
+
+        // 4. AI Chatbot State
+        let isAiChatOpen = false;
+        let isAiTyping = false;
+        let aiChatHistory = [
+            {
+                sender: 'bot',
+                text: 'Welcome to **The Grand Horizon**! I am your AI Concierge & Billing Assistant. Ask me for dish recommendations, room tariffs, or click an item I suggest to add it straight to your order!',
+                suggestedIds: ['M102', 'M201', 'R901']
+            }
+        ];
+
+        // ================= INITIALIZATION =================
+        window.onload = function() {
+            renderPublicCategories();
+            renderPublicMenu();
+            renderCustomerCartUI();
+            renderCustomerActiveOrders();
+            renderPosCategories();
+            renderPosMenuGrid();
+            renderPosCart();
+            renderPosCustomerOrders();
+            renderManageMenuTable();
+            renderBillsHistory();
+            renderDailyCustomersTable();
+            updatePosMetrics();
+            renderAiChatMessages();
+        };
+
+        // ================= NAVIGATION & VIEW SWITCHING =================
+        function switchView(viewName, skipScrollTop = false) {
+            const viewPublic = document.getElementById('view-public');
+            const viewLogin  = document.getElementById('view-login');
+            const viewPos    = document.getElementById('view-pos');
+
+            const publicNavLinks = document.getElementById('public-nav-links');
+            const mobilePublicNav = document.getElementById('mobile-public-nav');
+            const navEmpBtn      = document.getElementById('nav-emp-btn');
+            const navPublicBtn   = document.getElementById('nav-public-btn');
+
+            // Hide all views first
+            viewPublic.classList.add('hidden');
+            viewLogin.classList.add('hidden');
+            viewPos.classList.add('hidden');
+
+            if (viewName === 'public') {
+                viewPublic.classList.remove('hidden');
+                publicNavLinks.classList.remove('hidden');
+                if (mobilePublicNav) mobilePublicNav.classList.remove('hidden');
+                navEmpBtn.classList.remove('hidden');
+                navPublicBtn.classList.add('hidden');
+                renderPublicMenu();
+            } else if (viewName === 'login') {
+                viewLogin.classList.remove('hidden');
+                publicNavLinks.classList.add('hidden');
+                if (mobilePublicNav) mobilePublicNav.classList.add('hidden');
+                navEmpBtn.classList.add('hidden');
+                navPublicBtn.classList.remove('hidden');
+                navPublicBtn.classList.add('flex');
+            } else if (viewName === 'pos') {
+                if (!currentEmployee) {
+                    switchView('login');
+                    return;
+                }
+                viewPos.classList.remove('hidden');
+                publicNavLinks.classList.add('hidden');
+                if (mobilePublicNav) mobilePublicNav.classList.add('hidden');
+                navEmpBtn.classList.add('hidden');
+                navPublicBtn.classList.remove('hidden');
+                navPublicBtn.classList.add('flex');
+                renderPosMenuGrid();
+                updatePosMetrics();
+            }
+            if (!skipScrollTop) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function navigateToSection(sectionId) {
+            switchView('public', true);
+            setTimeout(() => {
+                const targetEl = document.getElementById(sectionId);
+                if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 50);
+        }
+
+        function selectRoomAndOrderFood(roomLabel) {
+            const serviceSelect = document.getElementById('self-service-type');
+            const roomInput = document.getElementById('self-table-room');
+            if (serviceSelect) serviceSelect.value = 'Room Service';
+            if (roomInput) roomInput.value = roomLabel;
+            navigateToSection('dining-menu');
+            showToast(`Room Service selected for ${roomLabel}. Pick your dishes below!`, 'info');
+        }
+
+        function handlePortalClick() {
+            if (currentEmployee) {
+                switchView('pos');
+            } else {
+                switchView('login');
+            }
+        }
+
+        function switchPosTab(tabName) {
+            const tabs = ['billing', 'orders', 'menu', 'history', 'customers'];
+            tabs.forEach(t => {
+                const contentEl = document.getElementById(`pos-content-${t}`);
+                const btnEl = document.getElementById(`pos-tab-${t}`);
+                if (t === tabName) {
+                    contentEl.classList.remove('hidden');
+                    btnEl.className = 'px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white flex items-center gap-2 transition-all';
+                } else {
+                    contentEl.classList.add('hidden');
+                    btnEl.className = 'px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition-all';
+                }
+            });
+            if (tabName === 'orders') {
+                renderPosCustomerOrders();
+            } else if (tabName === 'customers') {
+                renderDailyCustomersTable();
+            }
+        }
+
+        // ================= EMPLOYEE AUTHENTICATION =================
+        function fillDemoCredentials(user, pin) {
+            document.getElementById('login-username').value = user;
+            document.getElementById('login-password').value = pin;
+            document.getElementById('login-error-box').classList.add('hidden');
+        }
+
+        function handleEmployeeLogin(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById('login-username').value.trim().toUpperCase();
+            const passwordInput = document.getElementById('login-password').value.trim();
+            const errorBox = document.getElementById('login-error-box');
+
+            const matchedEmp = EMPLOYEES.find(emp => emp.id === usernameInput && emp.pin === passwordInput);
+
+            if (!matchedEmp) {
+                errorBox.classList.remove('hidden');
+                showToast('Invalid Employee ID or Security PIN', 'error');
+                return;
+            }
+
+            errorBox.classList.add('hidden');
+            currentEmployee = matchedEmp;
+
+            // Update Top Navbar Staff Badge
+            document.getElementById('emp-name-display').textContent = matchedEmp.name;
+            document.getElementById('emp-role-display').textContent = `${matchedEmp.role} (${matchedEmp.id})`;
+            const badge = document.getElementById('logged-in-badge');
+            badge.classList.remove('hidden');
+            badge.classList.add('flex');
+
+            showToast(`Welcome back, ${matchedEmp.name}!`, 'success');
+            switchView('pos');
+        }
+
+        function logoutEmployee() {
+            currentEmployee = null;
+            const badge = document.getElementById('logged-in-badge');
+            badge.classList.add('hidden');
+            badge.classList.remove('flex');
+            document.getElementById('employee-login-form').reset();
+            showToast('Logged out of Employee Terminal.', 'info');
+            switchView('login');
+        }
+
+        // ================= PUBLIC HOTEL MENU RENDERING =================
+        function renderPublicCategories() {
+            const container = document.getElementById('public-category-pills');
+            if (!container) return;
+            const foodCategories = CATEGORIES.filter(c => c !== 'Room Tariffs');
+            container.innerHTML = foodCategories.map(cat => {
+                const active = selectedPublicCategory === cat;
+                return `
+                    <button onclick="setPublicCategory('${cat}')"
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${active ? 'bg-slate-900 text-gold-400 shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                        ${cat}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function setPublicCategory(cat) {
+            selectedPublicCategory = cat;
+            renderPublicCategories();
+            renderPublicMenu();
+        }
+
+        function renderPublicMenu() {
+            const grid = document.getElementById('public-menu-grid');
+            if (!grid) return;
+            const query = (document.getElementById('public-menu-search')?.value || '').toLowerCase();
+
+            const filtered = menuItems.filter(item => {
+                if (item.category === 'Room Tariffs') return false;
+                const matchCat = selectedPublicCategory === 'All' || item.category === selectedPublicCategory;
+                const matchSearch = item.name.toLowerCase().includes(query) ||
+                                    item.desc.toLowerCase().includes(query) ||
+                                    item.type.toLowerCase().includes(query);
+                return matchCat && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-400 text-sm">
+                        No dishes match your search filter.
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => {
+                const inCustCart = customerSelfCart.find(c => c.item.id === item.id);
+                const qtyInCart = inCustCart ? inCustCart.qty : 0;
+
+                return `
+                <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 hover:border-gold-400 transition-all flex flex-col justify-between shadow-sm hover:shadow">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-500">
+                                ${item.category}
+                            </span>
+                            <span class="flex items-center gap-1 text-xs font-semibold ${item.type === 'Veg' ? 'text-emerald-700' : 'text-red-700'}">
+                                <span class="w-2.5 h-2.5 rounded-full ${item.type === 'Veg' ? 'bg-emerald-600' : 'bg-red-600'}"></span>
+                                ${item.type}
+                            </span>
+                        </div>
+                        <h4 class="font-serif font-bold text-lg text-slate-900">${item.name}</h4>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">${item.desc}</p>
+                    </div>
+                    <div class="mt-5 pt-3.5 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-base font-bold text-slate-900 block">₹${item.price.toFixed(2)}</span>
+                            <span class="text-[10px] text-slate-400 font-mono">Code: ${item.id}</span>
+                        </div>
+                        ${qtyInCart === 0 ? `
+                            <button onclick="addToCustomerSelfCart('${item.id}')" class="bg-slate-900 hover:bg-gold-500 text-white hover:text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-plus text-gold-400 group-hover:text-slate-950"></i>
+                                <span>Add to Order</span>
+                            </button>
+                        ` : `
+                            <div class="flex items-center gap-2 bg-gold-500 text-slate-950 px-2.5 py-1.5 rounded-xl font-bold text-xs shadow-sm">
+                                <button onclick="changeCustomerSelfCartQty('${item.id}', -1)" class="w-6 h-6 rounded-lg bg-slate-950/10 hover:bg-slate-950/20 flex items-center justify-center">-</button>
+                                <span class="w-5 text-center">${qtyInCart}</span>
+                                <button onclick="changeCustomerSelfCartQty('${item.id}', 1)" class="w-6 h-6 rounded-lg bg-slate-950/10 hover:bg-slate-950/20 flex items-center justify-center">+</button>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // ================= CUSTOMER SELF-ORDERING FUNCTIONS =================
+        function addToCustomerSelfCart(itemId) {
+            const itemObj = menuItems.find(m => m.id === itemId);
+            if (!itemObj) return;
+
+            const existing = customerSelfCart.find(c => c.item.id === itemId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                customerSelfCart.push({ item: itemObj, qty: 1 });
+            }
+            renderPublicMenu();
+            renderCustomerCartUI();
+            showToast(`Added "${itemObj.name}" to your order tray!`, 'success');
+        }
+
+        function changeCustomerSelfCartQty(itemId, delta) {
+            const idx = customerSelfCart.findIndex(c => c.item.id === itemId);
+            if (idx === -1) return;
+
+            customerSelfCart[idx].qty += delta;
+            if (customerSelfCart[idx].qty <= 0) {
+                customerSelfCart.splice(idx, 1);
+            }
+            renderPublicMenu();
+            renderCustomerCartUI();
+        }
+
+        function removeCustomerSelfCartItem(itemId) {
+            const idx = customerSelfCart.findIndex(c => c.item.id === itemId);
+            if (idx === -1) return;
+            const removedName = customerSelfCart[idx].item.name;
+            customerSelfCart.splice(idx, 1);
+            renderPublicMenu();
+            renderCustomerCartUI();
+            showToast(`Removed "${removedName}" from your order tray.`, 'info');
+        }
+
+        function cancelEntireCustomerTray() {
+            if (customerSelfCart.length === 0) {
+                showToast('Your order tray is already empty.', 'info');
+                return;
+            }
+            customerSelfCart = [];
+            renderPublicMenu();
+            renderCustomerCartUI();
+            showToast('Your current order tray has been cancelled and cleared.', 'info');
+        }
+
+        async function cancelSubmittedCustomerOrder(orderId) {
+            const ord = customerOrders.find(o => o.orderId === orderId);
+            if (!ord) return;
+
+            if (ord.status === 'Billed') {
+                showToast('This order has already been billed and cannot be cancelled.', 'error');
+                return;
+            }
+            if (ord.status === 'Cancelled') {
+                showToast('This order is already cancelled.', 'info');
+                return;
+            }
+
+            ord.status = 'Cancelled';
+
+            if (activeOrderBeingBilled === orderId) {
+                activeOrderBeingBilled = null;
+                clearCurrentCart();
+            }
+
+            renderCustomerCartUI();
+            renderCustomerActiveOrders();
+            renderPosCustomerOrders();
+            updatePosMetrics();
+
+            if (window.cloudDB && window.cloudDB.saveOrder) {
+                await window.cloudDB.saveOrder(ord);
+            }
+
+            showToast(`Order ${orderId} has been cancelled.`, 'info');
+        }
+
+        function openCustomerCartDrawer() {
+            renderCustomerCartUI();
+            document.getElementById('cust-order-modal').classList.remove('hidden');
+        }
+
+        function closeCustomerCartDrawer() {
+            document.getElementById('cust-order-modal').classList.add('hidden');
+        }
+
+        function renderCustomerCartUI() {
+            const totalCount = customerSelfCart.reduce((sum, c) => sum + c.qty, 0);
+            const subtotal = customerSelfCart.reduce((sum, c) => sum + (c.item.price * c.qty), 0);
+            const tax = subtotal * 0.075;
+            const grandTotal = subtotal + tax;
+
+            // Update Nav & Floating bar
+            document.getElementById('nav-cust-cart-count').textContent = totalCount;
+            const mobileCountEl = document.getElementById('mobile-cust-cart-count');
+            if (mobileCountEl) mobileCountEl.textContent = totalCount;
+            document.getElementById('float-cust-count').textContent = totalCount;
+            document.getElementById('float-cust-total').textContent = `₹${subtotal.toFixed(2)}`;
+
+            const floatingBar = document.getElementById('floating-cust-cart');
+            const cancelTrayBtn = document.getElementById('cancel-tray-btn');
+            if (totalCount > 0) {
+                floatingBar.classList.remove('hidden');
+                if (cancelTrayBtn) {
+                    cancelTrayBtn.classList.remove('hidden');
+                    cancelTrayBtn.classList.add('inline-flex');
+                }
+            } else {
+                floatingBar.classList.add('hidden');
+                if (cancelTrayBtn) {
+                    cancelTrayBtn.classList.add('hidden');
+                    cancelTrayBtn.classList.remove('inline-flex');
+                }
+            }
+
+            // Update Drawer Items
+            const drawerList = document.getElementById('cust-drawer-items');
+            if (customerSelfCart.length === 0) {
+                drawerList.innerHTML = `
+                    <div class="py-10 text-center text-slate-400">
+                        <i class="fa-solid fa-utensils text-3xl mb-3 text-slate-300"></i>
+                        <p class="text-sm font-semibold text-slate-600">Your Order Tray is Empty</p>
+                        <p class="text-xs mt-1">Browse our signature menu and tap "Add to Order" on any dish.</p>
+                    </div>
+                `;
+            } else {
+                drawerList.innerHTML = customerSelfCart.map(c => `
+                    <div class="py-3 flex items-center justify-between gap-2 text-xs">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full ${c.item.type === 'Veg' ? 'bg-emerald-600' : 'bg-red-600'}"></span>
+                                <p class="font-bold text-slate-800">${c.item.name}</p>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-0.5">₹${c.item.price} each</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-slate-100 rounded-lg p-1">
+                            <button type="button" onclick="changeCustomerSelfCartQty('${c.item.id}', -1)" class="w-6 h-6 rounded bg-white hover:bg-slate-200 text-slate-700 font-bold">-</button>
+                            <span class="w-5 text-center font-bold text-slate-800">${c.qty}</span>
+                            <button type="button" onclick="changeCustomerSelfCartQty('${c.item.id}', 1)" class="w-6 h-6 rounded bg-white hover:bg-slate-200 text-slate-700 font-bold">+</button>
+                        </div>
+                        <div class="w-16 text-right font-bold text-slate-900">
+                            ₹${(c.item.price * c.qty).toFixed(2)}
+                        </div>
+                        <button type="button" onclick="removeCustomerSelfCartItem('${c.item.id}')" title="Remove item" class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition-colors">
+                            <i class="fa-solid fa-trash-can text-[11px]"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // Render Submitted Kitchen Orders inside My Order Tray so guests can cancel them directly here too
+            const activeOrdersDrawer = document.getElementById('cust-drawer-active-orders');
+            if (activeOrdersDrawer) {
+                if (customerOrders.length === 0) {
+                    activeOrdersDrawer.classList.add('hidden');
+                    activeOrdersDrawer.innerHTML = '';
+                } else {
+                    activeOrdersDrawer.classList.remove('hidden');
+                    activeOrdersDrawer.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Submitted Kitchen Orders</h4>
+                            <span class="text-[10px] text-slate-400">${customerOrders.length} order(s)</span>
+                        </div>
+                        ${customerOrders.map(ord => {
+                            const ordSub = ord.items.reduce((s, i) => s + (i.price * i.qty), 0);
+                            const canCancel = ord.status !== 'Billed' && ord.status !== 'Cancelled';
+                            let statusBadge = 'bg-amber-100 text-amber-800';
+                            if (ord.status === 'Preparing') statusBadge = 'bg-blue-100 text-blue-800';
+                            if (ord.status === 'Ready') statusBadge = 'bg-emerald-100 text-emerald-800';
+                            if (ord.status === 'Billed') statusBadge = 'bg-slate-200 text-slate-700';
+                            if (ord.status === 'Cancelled') statusBadge = 'bg-red-100 text-red-700';
+
+                            return `
+                                <div class="p-3 rounded-xl border ${ord.status === 'Cancelled' ? 'border-red-200 bg-red-50/30 opacity-75' : 'border-slate-200 bg-slate-50'} text-xs space-y-1.5">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-mono font-bold text-slate-900">${ord.orderId} • ${ord.time}</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadge}">${ord.status}</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-600">${ord.items.map(i => `${i.qty}x ${i.name}`).join(', ')}</p>
+                                    <div class="flex items-center justify-between pt-1.5 border-t border-slate-200/70">
+                                        <span class="font-bold text-slate-800">₹${ordSub.toFixed(2)}</span>
+                                        ${canCancel ? `
+                                            <button type="button" onclick="cancelSubmittedCustomerOrder('${ord.orderId}')" class="px-2.5 py-1 rounded-lg bg-red-100 hover:bg-red-600 text-red-700 hover:text-white font-bold text-[11px] transition-colors flex items-center gap-1">
+                                                <i class="fa-solid fa-xmark"></i>
+                                                <span>Cancel Order</span>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    `;
+                }
+            }
+
+            document.getElementById('self-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+            document.getElementById('self-tax').textContent = `₹${tax.toFixed(2)}`;
+            document.getElementById('self-grand-total').textContent = `₹${grandTotal.toFixed(2)}`;
+        }
+
+        async function submitCustomerSelfOrder(e) {
+            e.preventDefault();
+            if (customerSelfCart.length === 0) {
+                showToast('Please add at least one food item to your tray first.', 'error');
+                return;
+            }
+
+            const custName = document.getElementById('self-cust-name').value.trim();
+            const custPhone = document.getElementById('self-cust-phone').value.trim();
+            const serviceType = document.getElementById('self-service-type').value;
+            const tableRoom = document.getElementById('self-table-room').value.trim();
+            const notes = document.getElementById('self-order-notes').value.trim();
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+            const newOrder = {
+                orderId: `ORD-${orderCounter++}`,
+                createdAt: Date.now(),
+                time: timeStr,
+                customerName: custName,
+                customerPhone: custPhone,
+                serviceType: serviceType,
+                tableRoom: tableRoom,
+                notes: notes,
+                status: 'Pending',
+                items: customerSelfCart.map(c => ({
+                    id: c.item.id,
+                    name: c.item.name,
+                    qty: c.qty,
+                    price: c.item.price
+                }))
+            };
+
+            customerOrders.unshift(newOrder);
+            customerSelfCart = [];
+
+            // Reset form and close drawer
+            document.getElementById('self-cust-name').value = '';
+            document.getElementById('self-cust-phone').value = '';
+            document.getElementById('self-table-room').value = '';
+            document.getElementById('self-order-notes').value = '';
+
+            closeCustomerCartDrawer();
+            renderPublicMenu();
+            renderCustomerCartUI();
+            renderCustomerActiveOrders();
+            renderPosCustomerOrders();
+            updatePosMetrics();
+
+            if (window.cloudDB && window.cloudDB.saveOrder) {
+                await window.cloudDB.saveOrder(newOrder);
+            }
+
+            // Automatically record/update this guest in the Daily Customers Cloud Registry
+            await upsertDailyCustomerRecord({
+                name: custName,
+                phone: custPhone,
+                tableRoom: tableRoom,
+                visitType: serviceType,
+                idProof: 'Self-Order Guest',
+                incrementOrders: 1,
+                addedSpend: 0
+            });
+
+            showToast(`Order ${newOrder.orderId} & Customer saved to Cloud DB!`, 'success');
+            document.getElementById('dining-menu').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderCustomerActiveOrders() {
+            const box = document.getElementById('customer-active-orders-box');
+            const list = document.getElementById('customer-active-orders-list');
+
+            if (customerOrders.length === 0) {
+                box.classList.add('hidden');
+                return;
+            }
+
+            box.classList.remove('hidden');
+            list.innerHTML = customerOrders.map(ord => {
+                const total = ord.items.reduce((s, i) => s + (i.price * i.qty), 0);
+                let badgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
+                if (ord.status === 'Preparing') badgeClass = 'bg-blue-100 text-blue-800 border-blue-300';
+                if (ord.status === 'Ready') badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                if (ord.status === 'Billed') badgeClass = 'bg-slate-200 text-slate-700 border-slate-300';
+                if (ord.status === 'Cancelled') badgeClass = 'bg-red-100 text-red-700 border-red-300';
+
+                const canCancel = ord.status !== 'Billed' && ord.status !== 'Cancelled';
+
+                return `
+                    <div class="bg-white rounded-xl p-4 border ${ord.status === 'Cancelled' ? 'border-red-200 opacity-75' : 'border-gold-200'} shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <span class="font-mono font-bold text-xs text-slate-900">${ord.orderId} • ${ord.time}</span>
+                                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${badgeClass}">
+                                    ${ord.status === 'Billed' ? 'Completed & Billed' : ord.status}
+                                </span>
+                            </div>
+                            <p class="text-xs font-bold text-slate-800">${ord.customerName} <span class="font-normal text-slate-500">(${ord.serviceType} - ${ord.tableRoom})</span></p>
+                            <p class="text-xs text-slate-600 mt-1.5 ${ord.status === 'Cancelled' ? 'line-through text-slate-400' : ''}">
+                                ${ord.items.map(i => `${i.qty}x ${i.name}`).join(', ')}
+                            </p>
+                        </div>
+                        <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <div>
+                                <span class="text-slate-400">Subtotal:</span>
+                                <span class="font-bold text-slate-900 ml-1">₹${total.toFixed(2)}</span>
+                            </div>
+                            ${canCancel ? `
+                                <button type="button" onclick="cancelSubmittedCustomerOrder('${ord.orderId}')" class="px-3 py-1 rounded-lg bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 font-bold text-[11px] transition-colors flex items-center gap-1">
+                                    <i class="fa-solid fa-ban"></i>
+                                    <span>Cancel Order</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ================= EMPLOYEE POS: CUSTOMER SELF-ORDERS QUEUE =================
+        function renderPosCustomerOrders() {
+            const grid = document.getElementById('pos-customer-orders-grid');
+            const pendingCount = customerOrders.filter(o => o.status !== 'Billed' && o.status !== 'Cancelled').length;
+            const badge = document.getElementById('pending-orders-badge');
+            if (badge) badge.textContent = pendingCount;
+
+            if (!grid) return;
+
+            if (customerOrders.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 text-xs">No customer self-orders received yet.</div>`;
+                return;
+            }
+
+            grid.innerHTML = customerOrders.map(ord => {
+                const subtotal = ord.items.reduce((s, i) => s + (i.price * i.qty), 0);
+                let statusColor = 'bg-amber-100 text-amber-800';
+                if (ord.status === 'Preparing') statusColor = 'bg-blue-100 text-blue-800';
+                if (ord.status === 'Ready') statusColor = 'bg-emerald-100 text-emerald-800';
+                if (ord.status === 'Billed') statusColor = 'bg-slate-100 text-slate-500';
+                if (ord.status === 'Cancelled') statusColor = 'bg-red-100 text-red-700';
+
+                return `
+                    <div class="rounded-2xl border ${(ord.status === 'Billed' || ord.status === 'Cancelled') ? 'border-slate-200 bg-slate-50/60 opacity-75' : 'border-gold-300 bg-white shadow-sm'} p-5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                                <div>
+                                    <span class="font-mono font-bold text-sm text-slate-900">${ord.orderId}</span>
+                                    <span class="text-xs text-slate-400 ml-1">${ord.time}</span>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${statusColor}">${ord.status}</span>
+                            </div>
+
+                            <div class="py-3 text-xs space-y-1 border-b border-slate-100">
+                                <p class="font-bold text-slate-800 text-sm">${ord.customerName}</p>
+                                <p class="text-slate-500"><i class="fa-solid fa-phone mr-1 text-slate-400"></i> ${ord.customerPhone}</p>
+                                <p class="font-semibold text-gold-700"><i class="fa-solid fa-location-dot mr-1"></i> ${ord.serviceType} • ${ord.tableRoom}</p>
+                                ${ord.notes ? `<p class="text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-lg mt-1"><i class="fa-solid fa-comment-dots mr-1"></i> "${ord.notes}"</p>` : ''}
+                            </div>
+
+                            <div class="py-3 space-y-1.5">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ordered Items</p>
+                                ${ord.items.map(i => `
+                                    <div class="flex justify-between text-xs ${ord.status === 'Cancelled' ? 'line-through text-slate-400' : ''}">
+                                        <span class="text-slate-700 font-medium">${i.qty} × ${i.name}</span>
+                                        <span class="text-slate-900 font-semibold">₹${(i.price * i.qty).toFixed(2)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-200 space-y-2.5">
+                            <div class="flex justify-between items-center text-sm font-bold text-slate-900">
+                                <span>Order Subtotal</span>
+                                <span>₹${subtotal.toFixed(2)}</span>
+                            </div>
+
+                            ${(ord.status !== 'Billed' && ord.status !== 'Cancelled') ? `
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button onclick="advanceOrderStatus('${ord.orderId}')" class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition-colors">
+                                        <i class="fa-solid fa-rotate mr-1"></i> Mark ${ord.status === 'Pending' ? 'Preparing' : 'Ready'}
+                                    </button>
+                                    <button onclick="loadOrderIntoPosBill('${ord.orderId}')" class="px-3 py-2 rounded-xl bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                                        <span>Load to Bill</span>
+                                    </button>
+                                </div>
+                                <button onclick="cancelSubmittedCustomerOrder('${ord.orderId}')" class="w-full px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs transition-colors flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-ban"></i>
+                                    <span>Cancel Order</span>
+                                </button>
+                            ` : ord.status === 'Cancelled' ? `
+                                <div class="text-center py-1.5 bg-red-50 text-red-700 rounded-xl text-xs font-bold">
+                                    <i class="fa-solid fa-ban mr-1"></i> Order Cancelled
+                                </div>
+                            ` : `
+                                <div class="text-center py-1.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold">
+                                    <i class="fa-solid fa-check-circle mr-1"></i> Billed & Completed
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function advanceOrderStatus(orderId) {
+            const ord = customerOrders.find(o => o.orderId === orderId);
+            if (!ord) return;
+            if (ord.status === 'Pending') ord.status = 'Preparing';
+            else if (ord.status === 'Preparing') ord.status = 'Ready';
+            renderPosCustomerOrders();
+            renderCustomerActiveOrders();
+            if (window.cloudDB && window.cloudDB.saveOrder) {
+                await window.cloudDB.saveOrder(ord);
+            }
+            showToast(`Order ${orderId} synced to Cloud DB as ${ord.status}.`, 'info');
+        }
+
+        function loadOrderIntoPosBill(orderId) {
+            const ord = customerOrders.find(o => o.orderId === orderId);
+            if (!ord) return;
+
+            activeOrderBeingBilled = ord.orderId;
+            document.getElementById('bill-cust-name').value = ord.customerName;
+            document.getElementById('bill-cust-phone').value = ord.customerPhone;
+            document.getElementById('bill-service-type').value = ord.serviceType;
+            document.getElementById('bill-table-room').value = ord.tableRoom;
+
+            currentCart = ord.items.map(i => {
+                const foundMenu = menuItems.find(m => m.id === i.id) || {
+                    id: i.id,
+                    name: i.name,
+                    price: i.price,
+                    category: 'Main Course',
+                    type: 'Veg'
+                };
+                return { item: foundMenu, qty: i.qty };
+            });
+
+            switchPosTab('billing');
+            renderPosCart();
+            showToast(`Loaded ${ord.orderId} (${ord.customerName}) into POS Billing Builder!`, 'success');
+        }
+
+        // ================= POS ITEM SELECTOR & CART LOGIC =================
+        function renderPosCategories() {
+            const container = document.getElementById('pos-category-pills');
+            container.innerHTML = CATEGORIES.map(cat => {
+                const active = selectedPosCategory === cat;
+                return `
+                    <button onclick="setPosCategory('${cat}')"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${active ? 'bg-gold-500 text-slate-950 shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                        ${cat}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function setPosCategory(cat) {
+            selectedPosCategory = cat;
+            renderPosCategories();
+            renderPosMenuGrid();
+        }
+
+        function renderPosMenuGrid() {
+            const query = (document.getElementById('pos-search-input')?.value || '').toLowerCase();
+            const grid = document.getElementById('pos-items-grid');
+
+            const filtered = menuItems.filter(item => {
+                const matchCat = selectedPosCategory === 'All' || item.category === selectedPosCategory;
+                const matchQuery = item.name.toLowerCase().includes(query) || item.id.toLowerCase().includes(query);
+                return matchCat && matchQuery;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-10 text-center text-xs text-slate-400">No items found.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => `
+                <button onclick="addItemToBill('${item.id}')" 
+                        class="text-left p-3.5 rounded-xl border border-slate-200 hover:border-gold-500 hover:bg-gold-50/40 bg-slate-50/60 transition-all flex flex-col justify-between group">
+                    <div>
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                            <span class="font-mono">${item.id}</span>
+                            <span class="w-2 h-2 rounded-full ${item.type === 'Veg' ? 'bg-emerald-500' : 'bg-red-500'}"></span>
+                        </div>
+                        <p class="font-bold text-xs text-slate-800 group-hover:text-slate-950 line-clamp-2">${item.name}</p>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between w-full">
+                        <span class="font-bold text-xs text-gold-700">₹${item.price}</span>
+                        <span class="w-6 h-6 rounded-lg bg-white border border-slate-200 group-hover:bg-gold-500 group-hover:border-gold-500 group-hover:text-slate-950 flex items-center justify-center text-[10px] transition-colors">
+                            <i class="fa-solid fa-plus"></i>
+                        </span>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function addItemToBill(itemId) {
+            const menuObj = menuItems.find(m => m.id === itemId);
+            if (!menuObj) return;
+
+            const existing = currentCart.find(c => c.item.id === itemId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                currentCart.push({ item: menuObj, qty: 1 });
+            }
+            renderPosCart();
+        }
+
+        function updateCartQty(itemId, delta) {
+            const idx = currentCart.findIndex(c => c.item.id === itemId);
+            if (idx === -1) return;
+
+            currentCart[idx].qty += delta;
+            if (currentCart[idx].qty <= 0) {
+                currentCart.splice(idx, 1);
+            }
+            renderPosCart();
+        }
+
+        function clearCurrentCart() {
+            currentCart = [];
+            document.getElementById('bill-cust-name').value = '';
+            document.getElementById('bill-cust-phone').value = '';
+            document.getElementById('bill-table-room').value = '';
+            document.getElementById('bill-discount').value = 0;
+            renderPosCart();
+            showToast('Invoice form reset.', 'info');
+        }
+
+        function getBillCalculations() {
+            const subtotal = currentCart.reduce((acc, c) => acc + (c.item.price * c.qty), 0);
+            const discPercent = Math.min(100, Math.max(0, parseFloat(document.getElementById('bill-discount')?.value) || 0));
+            const discountAmt = (subtotal * discPercent) / 100;
+            const taxable = subtotal - discountAmt;
+            const taxAmt = taxable * 0.075; // 5% GST + 2.5% Service Charge = 7.5%
+            const grandTotal = taxable + taxAmt;
+            return { subtotal, discPercent, discountAmt, taxAmt, grandTotal };
+        }
+
+        function renderPosCart() {
+            const listEl = document.getElementById('pos-cart-list');
+            document.getElementById('live-invoice-number').textContent = `INV-2026-${invoiceCounter}`;
+
+            if (currentCart.length === 0) {
+                listEl.innerHTML = `
+                    <div class="py-10 text-center text-slate-400">
+                        <i class="fa-solid fa-basket-shopping text-2xl mb-2"></i>
+                        <p class="text-xs">No items added to bill yet.</p>
+                        <p class="text-[11px] text-slate-400">Click items on the left panel to add.</p>
+                    </div>
+                `;
+            } else {
+                listEl.innerHTML = currentCart.map(c => `
+                    <div class="py-2.5 flex items-center justify-between gap-2 text-xs">
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800">${c.item.name}</p>
+                            <p class="text-[11px] text-slate-400">₹${c.item.price} × ${c.qty}</p>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="updateCartQty('${c.item.id}', -1)" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold">-</button>
+                            <span class="w-6 text-center font-bold text-slate-800">${c.qty}</span>
+                            <button onclick="updateCartQty('${c.item.id}', 1)" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold">+</button>
+                        </div>
+                        <div class="w-16 text-right font-bold text-slate-900">
+                            ₹${(c.item.price * c.qty).toFixed(2)}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const { subtotal, discountAmt, taxAmt, grandTotal } = getBillCalculations();
+            document.getElementById('calc-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+            document.getElementById('calc-discount').textContent = `- ₹${discountAmt.toFixed(2)}`;
+            document.getElementById('calc-tax').textContent = `₹${taxAmt.toFixed(2)}`;
+            document.getElementById('calc-grand-total').textContent = `₹${grandTotal.toFixed(2)}`;
+        }
+
+        // ================= GENERATE CUSTOMER BILL & RECEIPT MODAL =================
+        async function generateFinalBill() {
+            if (currentCart.length === 0) {
+                showToast('Please add at least one food or room item to generate a bill.', 'error');
+                return;
+            }
+
+            const custName = document.getElementById('bill-cust-name').value.trim();
+            const tableRoom = document.getElementById('bill-table-room').value.trim();
+
+            if (!custName) {
+                showToast('Please enter the Customer Name.', 'error');
+                document.getElementById('bill-cust-name').focus();
+                return;
+            }
+            if (!tableRoom) {
+                showToast('Please enter the Table or Room Number.', 'error');
+                document.getElementById('bill-table-room').focus();
+                return;
+            }
+
+            const custPhone   = document.getElementById('bill-cust-phone').value.trim() || 'N/A';
+            const serviceType = document.getElementById('bill-service-type').value;
+            const paymentMode = document.getElementById('bill-payment-mode').value;
+            const { subtotal, discountAmt, taxAmt, grandTotal } = getBillCalculations();
+
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' +
+                                  now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+            const newBill = {
+                invoiceId: `INV-2026-${invoiceCounter}`,
+                createdAt: Date.now(),
+                date: formattedDate,
+                customerName: custName,
+                customerPhone: custPhone,
+                serviceType: serviceType,
+                tableRoom: tableRoom,
+                paymentMode: paymentMode,
+                staffName: currentEmployee ? `${currentEmployee.name} (${currentEmployee.id})` : 'Staff',
+                items: currentCart.map(c => ({
+                    name: c.item.name,
+                    qty: c.qty,
+                    price: c.item.price
+                })),
+                subtotal,
+                discountAmt,
+                taxAmt,
+                grandTotal
+            };
+
+            generatedBills.unshift(newBill);
+            invoiceCounter++;
+
+            // If this bill came from a customer self-order, mark that self-order as Billed
+            let billedOrderObj = null;
+            if (activeOrderBeingBilled) {
+                const matchedOrd = customerOrders.find(o => o.orderId === activeOrderBeingBilled);
+                if (matchedOrd) {
+                    matchedOrd.status = 'Billed';
+                    billedOrderObj = matchedOrd;
+                }
+                activeOrderBeingBilled = null;
+            }
+
+            // Open Receipt Modal with this bill
+            openReceiptModal(newBill);
+
+            // Reset POS Cart for next customer
+            currentCart = [];
+            document.getElementById('bill-cust-name').value = '';
+            document.getElementById('bill-cust-phone').value = '';
+            document.getElementById('bill-table-room').value = '';
+            document.getElementById('bill-discount').value = 0;
+
+            renderPosCart();
+            renderPosCustomerOrders();
+            renderCustomerActiveOrders();
+            renderBillsHistory();
+            updatePosMetrics();
+
+            if (window.cloudDB) {
+                if (window.cloudDB.saveBill) await window.cloudDB.saveBill(newBill);
+                if (billedOrderObj && window.cloudDB.saveOrder) await window.cloudDB.saveOrder(billedOrderObj);
+            }
+
+            // Automatically log/update the customer's daily spend in the Daily Customers Cloud Registry
+            await upsertDailyCustomerRecord({
+                name: custName,
+                phone: custPhone,
+                tableRoom: tableRoom,
+                visitType: serviceType,
+                idProof: `Billed (${paymentMode})`,
+                incrementOrders: billedOrderObj ? 0 : 1,
+                addedSpend: grandTotal
+            });
+
+            showToast(`Invoice ${newBill.invoiceId} & Customer profile saved to Cloud DB!`, 'success');
+        }
+
+        function openReceiptModal(billObj) {
+            document.getElementById('rcpt-id').textContent = billObj.invoiceId;
+            document.getElementById('rcpt-date').textContent = billObj.date;
+            document.getElementById('rcpt-cust').textContent = billObj.customerName;
+            document.getElementById('rcpt-phone').textContent = billObj.customerPhone;
+            document.getElementById('rcpt-location').textContent = `${billObj.serviceType} (${billObj.tableRoom})`;
+            document.getElementById('rcpt-staff').textContent = billObj.staffName;
+
+            const tbody = document.getElementById('rcpt-items-tbody');
+            tbody.innerHTML = billObj.items.map(i => `
+                <tr>
+                    <td class="py-1.5 text-slate-800 font-medium">${i.name}</td>
+                    <td class="py-1.5 text-center text-slate-600">${i.qty}</td>
+                    <td class="py-1.5 text-right text-slate-600">₹${i.price}</td>
+                    <td class="py-1.5 text-right font-semibold text-slate-900">₹${(i.price * i.qty).toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('rcpt-subtotal').textContent = `₹${billObj.subtotal.toFixed(2)}`;
+            document.getElementById('rcpt-discount').textContent = `- ₹${billObj.discountAmt.toFixed(2)}`;
+            document.getElementById('rcpt-tax').textContent = `₹${billObj.taxAmt.toFixed(2)}`;
+            document.getElementById('rcpt-total').textContent = `₹${billObj.grandTotal.toFixed(2)}`;
+            document.getElementById('rcpt-payment').textContent = billObj.paymentMode;
+
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function viewPastReceipt(invoiceId) {
+            const found = generatedBills.find(b => b.invoiceId === invoiceId);
+            if (found) openReceiptModal(found);
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        // ================= MENU MANAGEMENT (ADD / DELETE ITEMS) =================
+        async function handleAddNewMenuItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-item-name').value.trim();
+            const category = document.getElementById('new-item-category').value;
+            const price = parseFloat(document.getElementById('new-item-price').value);
+            const desc = document.getElementById('new-item-desc').value.trim();
+            const dietType = document.querySelector('input[name="diet-type"]:checked').value;
+
+            if (!name || isNaN(price) || price <= 0) return;
+
+            const newId = 'M' + Math.floor(100 + Math.random() * 899);
+            const newItemObj = {
+                id: newId,
+                createdAt: Date.now(),
+                name,
+                category,
+                price,
+                type: dietType,
+                desc
+            };
+            menuItems.unshift(newItemObj);
+
+            document.getElementById('add-menu-form').reset();
+            renderManageMenuTable();
+            renderPosMenuGrid();
+            renderPublicMenu();
+            updatePosMetrics();
+
+            if (window.cloudDB && window.cloudDB.saveMenuItem) {
+                await window.cloudDB.saveMenuItem(newItemObj);
+            }
+
+            showToast(`"${name}" synced to Cloud Hotel Menu!`, 'success');
+        }
+
+        async function deleteMenuItem(itemId) {
+            const idx = menuItems.findIndex(m => m.id === itemId);
+            if (idx !== -1) {
+                const removedName = menuItems[idx].name;
+                menuItems.splice(idx, 1);
+                renderManageMenuTable();
+                renderPosMenuGrid();
+                renderPublicMenu();
+                updatePosMetrics();
+
+                if (window.cloudDB && window.cloudDB.removeMenuItem) {
+                    await window.cloudDB.removeMenuItem(itemId);
+                }
+
+                showToast(`Removed "${removedName}" from Cloud Menu.`, 'info');
+            }
+        }
+
+        function renderManageMenuTable() {
+            const tbody = document.getElementById('manage-menu-tbody');
+            tbody.innerHTML = menuItems.map(item => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-3 px-4">
+                        <p class="font-bold text-slate-800">${item.name}</p>
+                        <p class="text-xs text-slate-400 line-clamp-1">${item.desc}</p>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-semibold">${item.category}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold ${item.type === 'Veg' ? 'text-emerald-700' : 'text-red-700'}">
+                            <span class="w-2 h-2 rounded-full ${item.type === 'Veg' ? 'bg-emerald-600' : 'bg-red-600'}"></span>
+                            ${item.type}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 font-bold text-slate-900">₹${item.price.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="deleteMenuItem('${item.id}')" class="text-xs text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors">
+                            <i class="fa-solid fa-trash-can"></i> Remove
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ================= BILLING HISTORY & METRICS =================
+        function renderBillsHistory() {
+            const tbody = document.getElementById('bills-history-tbody');
+            document.getElementById('history-count-badge').textContent = generatedBills.length;
+
+            if (generatedBills.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400 text-xs">No bills generated yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = generatedBills.map(b => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-3.5 px-4 font-mono font-bold text-xs text-slate-800">${b.invoiceId}</td>
+                    <td class="py-3.5 px-4 text-xs text-slate-500">${b.date}</td>
+                    <td class="py-3.5 px-4">
+                        <p class="font-bold text-slate-800 text-xs">${b.customerName}</p>
+                        <p class="text-[11px] text-slate-400">${b.customerPhone}</p>
+                    </td>
+                    <td class="py-3.5 px-4 text-xs font-medium text-slate-700">${b.serviceType} • ${b.tableRoom}</td>
+                    <td class="py-3.5 px-4 text-xs text-slate-600">${b.paymentMode}</td>
+                    <td class="py-3.5 px-4 text-xs text-slate-600">${b.staffName}</td>
+                    <td class="py-3.5 px-4 font-bold text-emerald-700 text-sm">₹${b.grandTotal.toFixed(2)}</td>
+                    <td class="py-3.5 px-4 text-right">
+                        <button onclick="viewPastReceipt('${b.invoiceId}')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors inline-flex items-center gap-1.5">
+                            <i class="fa-solid fa-receipt text-gold-400"></i>
+                            <span>View / Print</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updatePosMetrics() {
+            const totalRev = generatedBills.reduce((sum, b) => sum + (Number(b.grandTotal) || 0), 0);
+            document.getElementById('pos-today-revenue').textContent = `₹${totalRev.toFixed(2)}`;
+            document.getElementById('pos-total-items').textContent = menuItems.length;
+            const custBadge = document.getElementById('customers-count-badge');
+            if (custBadge) custBadge.textContent = dailyCustomers.length;
+        }
+
+        async function clearAllGeneratedBills() {
+            const oldBills = [...generatedBills];
+            generatedBills = [];
+            invoiceCounter = 1001;
+
+            // Reset totalSpent on any daily customer records to 0
+            dailyCustomers.forEach(c => {
+                c.totalSpent = 0;
+            });
+
+            renderBillsHistory();
+            renderDailyCustomersTable();
+            updatePosMetrics();
+
+            if (window.cloudDB && window.cloudDB.clearAllBills) {
+                await window.cloudDB.clearAllBills(oldBills);
+            }
+            showToast("Today's Revenue and Billing History reset to ₹0.00!", 'info');
+        }
+
+        // ================= DAILY CUSTOMERS REGISTRY & CLOUDFLARE / CLOUD DB SYNC =================
+        async function upsertDailyCustomerRecord({ name, phone, tableRoom, visitType, idProof = 'Walk-In / Guest', incrementOrders = 0, addedSpend = 0 }) {
+            const cleanPhone = (phone || '').replace(/\D/g, '');
+            const custId = cleanPhone.length >= 6
+                ? `CUST-${cleanPhone.slice(-10)}`
+                : `CUST-${name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)}`;
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+            let existing = dailyCustomers.find(c => c.custId === custId);
+            if (existing) {
+                existing.name = name || existing.name;
+                if (phone && phone !== 'N/A') existing.phone = phone;
+                existing.tableRoom = tableRoom || existing.tableRoom;
+                existing.visitType = visitType || existing.visitType;
+                if (idProof) existing.idProof = idProof;
+                existing.dateStr = dateStr;
+                existing.lastSeen = timeStr;
+                existing.ordersCount = (existing.ordersCount || 0) + incrementOrders;
+                existing.totalSpent = (existing.totalSpent || 0) + addedSpend;
+                existing.updatedAt = Date.now();
+            } else {
+                existing = {
+                    custId,
+                    name,
+                    phone: phone || 'N/A',
+                    tableRoom: tableRoom || 'Lobby',
+                    visitType: visitType || 'Dine-In',
+                    idProof: idProof || 'Verified',
+                    dateStr,
+                    lastSeen: timeStr,
+                    ordersCount: Math.max(1, incrementOrders),
+                    totalSpent: addedSpend,
+                    updatedAt: Date.now()
+                };
+                dailyCustomers.unshift(existing);
+            }
+
+            renderDailyCustomersTable();
+            updatePosMetrics();
+
+            // 1. Save to Real-Time Cloud NoSQL Database
+            if (window.cloudDB && window.cloudDB.saveCustomer) {
+                await window.cloudDB.saveCustomer(existing);
+            }
+
+            // 2. If a Cloudflare Worker / D1 REST Endpoint is configured, mirror the payload
+            if (cloudflareWebhookUrl) {
+                try {
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (cloudflareWebhookToken) {
+                        headers['Authorization'] = `Bearer ${cloudflareWebhookToken}`;
+                    }
+                    await fetch(cloudflareWebhookUrl, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ event: 'DAILY_CUSTOMER_UPSERT', customer: existing })
+                    });
+                } catch (err) {
+                    console.warn('Cloudflare Worker mirror notice:', err);
+                }
+            }
+        }
+
+        async function handleManualCustomerAdd(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-cust-name').value.trim();
+            const phone = document.getElementById('reg-cust-phone').value.trim();
+            const room = document.getElementById('reg-cust-room').value.trim();
+            const visitType = document.getElementById('reg-cust-type').value;
+            const idProof = document.getElementById('reg-cust-idproof').value.trim() || 'Checked-In';
+
+            if (!name || !phone) return;
+
+            await upsertDailyCustomerRecord({
+                name,
+                phone,
+                tableRoom: room,
+                visitType,
+                idProof,
+                incrementOrders: 0,
+                addedSpend: 0
+            });
+
+            document.getElementById('add-customer-form').reset();
+            showToast(`Customer "${name}" stored in Daily Cloud Registry!`, 'success');
+        }
+
+        function loadCustomerToBilling(custId) {
+            const c = dailyCustomers.find(item => item.custId === custId);
+            if (!c) return;
+
+            document.getElementById('bill-cust-name').value = c.name;
+            document.getElementById('bill-cust-phone').value = c.phone !== 'N/A' ? c.phone : '';
+            document.getElementById('bill-table-room').value = c.tableRoom;
+            switchPosTab('billing');
+            showToast(`Loaded ${c.name}'s details into POS Invoice Builder!`, 'info');
+        }
+
+        function renderDailyCustomersTable() {
+            const tbody = document.getElementById('daily-customers-tbody');
+            const badge = document.getElementById('customers-count-badge');
+            if (badge) badge.textContent = dailyCustomers.length;
+            if (!tbody) return;
+
+            const query = (document.getElementById('daily-cust-search')?.value || '').toLowerCase();
+            const filtered = dailyCustomers.filter(c =>
+                (c.name || '').toLowerCase().includes(query) ||
+                (c.phone || '').toLowerCase().includes(query) ||
+                (c.tableRoom || '').toLowerCase().includes(query) ||
+                (c.visitType || '').toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-400 text-xs">No customer records match your search.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(c => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-3.5 px-4">
+                        <p class="font-bold text-slate-900 text-xs">${c.name}</p>
+                        <p class="text-[11px] text-slate-500"><i class="fa-solid fa-phone mr-1 text-slate-400"></i>${c.phone}</p>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <p class="font-medium text-slate-800">${c.dateStr}</p>
+                        <p class="text-[11px] text-slate-400">Last active: ${c.lastSeen}</p>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <span class="px-2.5 py-1 rounded-lg bg-gold-50 text-gold-800 border border-gold-200 font-bold text-[11px]">
+                            ${c.tableRoom}
+                        </span>
+                        <span class="block text-[10px] text-slate-400 mt-0.5">${c.visitType}</span>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <span class="font-semibold text-slate-700">${c.ordersCount || 0} Order(s)</span>
+                        <span class="block text-[10px] text-emerald-600">${c.idProof || 'Synced'}</span>
+                    </td>
+                    <td class="py-3.5 px-4 font-bold text-emerald-700 text-sm">
+                        ₹${(c.totalSpent || 0).toFixed(2)}
+                    </td>
+                    <td class="py-3.5 px-4 text-right">
+                        <button onclick="loadCustomerToBilling('${c.custId}')" class="bg-slate-900 hover:bg-gold-500 text-white hover:text-slate-950 font-bold px-3 py-1.5 rounded-lg text-[11px] transition-colors inline-flex items-center gap-1.5">
+                            <i class="fa-solid fa-cash-register"></i>
+                            <span>New Bill</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function saveCloudflareEndpointConfig() {
+            cloudflareWebhookUrl = document.getElementById('cf-worker-url').value.trim();
+            cloudflareWebhookToken = document.getElementById('cf-worker-token').value.trim();
+            if (cloudflareWebhookUrl) {
+                showToast('Cloudflare Worker / D1 Webhook Endpoint connected!', 'success');
+            } else {
+                showToast('Using default Built-In Real-Time Cloud Database.', 'info');
+            }
+        }
+
+        function exportDailyCustomersCSV() {
+            if (dailyCustomers.length === 0) {
+                showToast('No customer records to export.', 'error');
+                return;
+            }
+            const headers = ['Customer ID', 'Full Name', 'Phone', 'Room / Table', 'Visit Type', 'Date', 'Last Seen', 'Orders Count', 'Total Spent (INR)'];
+            const rows = dailyCustomers.map(c => [
+                c.custId,
+                `"${(c.name || '').replace(/"/g, '""')}"`,
+                `"${c.phone || ''}"`,
+                `"${c.tableRoom || ''}"`,
+                `"${c.visitType || ''}"`,
+                `"${c.dateStr || ''}"`,
+                `"${c.lastSeen || ''}"`,
+                c.ordersCount || 0,
+                (c.totalSpent || 0).toFixed(2)
+            ]);
+            const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Grand_Horizon_Daily_Customers_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Exported Daily Customers CSV report!', 'success');
+        }
+
+        function downloadReadyHtmlFile() {
+            const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Downloaded index.html ready for GitHub upload!', 'success');
+        }
+
+        // ================= AI CONCIERGE CHATBOT (GEMINI API) =================
+        function toggleAiChat() {
+            isAiChatOpen = !isAiChatOpen;
+            const panel = document.getElementById('ai-chat-panel');
+            const toggleBtn = document.getElementById('ai-chat-toggle-btn');
+
+            if (isAiChatOpen) {
+                panel.classList.remove('hidden');
+                toggleBtn.classList.add('hidden');
+                renderAiChatMessages();
+                setTimeout(() => document.getElementById('ai-chat-input')?.focus(), 100);
+            } else {
+                panel.classList.add('hidden');
+                toggleBtn.classList.remove('hidden');
+            }
+        }
+
+        function resetAiChat() {
+            aiChatHistory = [
+                {
+                    sender: 'bot',
+                    text: 'Chat cleared! How can I assist you with our food menu, luxury suites, or customer billing today?',
+                    suggestedIds: ['M202', 'M402']
+                }
+            ];
+            renderAiChatMessages();
+        }
+
+        function formatAiText(rawText) {
+            const safe = rawText
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            return safe
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function extractMentionedMenuIds(replyText) {
+            const matched = [];
+            menuItems.forEach(item => {
+                if (
+                    replyText.toLowerCase().includes(item.name.toLowerCase()) ||
+                    replyText.toUpperCase().includes(item.id.toUpperCase())
+                ) {
+                    matched.push(item.id);
+                }
+            });
+            return matched.slice(0, 3);
+        }
+
+        function renderAiChatMessages() {
+            const container = document.getElementById('ai-chat-messages');
+            if (!container) return;
+
+            container.innerHTML = aiChatHistory.map(msg => {
+                if (msg.sender === 'user') {
+                    return `
+                        <div class="flex justify-end">
+                            <div class="bg-slate-900 text-white rounded-2xl rounded-tr-sm px-3.5 py-2.5 max-w-[82%] shadow-sm leading-relaxed">
+                                ${formatAiText(msg.text)}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const actionCards = (msg.suggestedIds || [])
+                        .map(id => menuItems.find(m => m.id === id))
+                        .filter(Boolean)
+                        .map(item => `
+                            <div class="mt-2 bg-slate-50 border border-gold-300/80 rounded-xl p-2 flex items-center justify-between gap-2">
+                                <div>
+                                    <p class="font-bold text-slate-800 text-[11px]">${item.name}</p>
+                                    <p class="text-[10px] text-gold-700 font-semibold">₹${item.price} • ${item.category}</p>
+                                </div>
+                                <button type="button" onclick="aiQuickAddItem('${item.id}')" class="bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-[10px] whitespace-nowrap transition-colors">
+                                    + Add
+                                </button>
+                            </div>
+                        `).join('');
+
+                    return `
+                        <div class="flex items-start gap-2">
+                            <div class="w-7 h-7 rounded-xl bg-gold-500 text-slate-950 flex items-center justify-center font-bold flex-shrink-0 mt-0.5">
+                                <i class="fa-solid fa-robot text-xs"></i>
+                            </div>
+                            <div class="bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-sm px-3.5 py-2.5 max-w-[85%] shadow-sm leading-relaxed">
+                                <div>${formatAiText(msg.text)}</div>
+                                ${actionCards}
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            if (isAiTyping) {
+                container.innerHTML += `
+                    <div class="flex items-start gap-2">
+                        <div class="w-7 h-7 rounded-xl bg-gold-500 text-slate-950 flex items-center justify-center font-bold flex-shrink-0">
+                            <i class="fa-solid fa-robot text-xs"></i>
+                        </div>
+                        <div class="bg-white border border-slate-200 text-slate-500 rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-gold-500 animate-bounce"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-gold-500 animate-bounce" style="animation-delay:0.15s"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-gold-500 animate-bounce" style="animation-delay:0.3s"></span>
+                            <span class="text-[11px] ml-1">Horizon AI is thinking...</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function aiQuickAddItem(itemId) {
+            const posVisible = !document.getElementById('view-pos').classList.contains('hidden');
+            if (posVisible && currentEmployee) {
+                addItemToBill(itemId);
+                const itemObj = menuItems.find(m => m.id === itemId);
+                if (itemObj) showToast(`Added "${itemObj.name}" to POS Customer Bill!`, 'success');
+            } else {
+                addToCustomerSelfCart(itemId);
+            }
+        }
+
+        function sendQuickAiPrompt(promptText) {
+            const input = document.getElementById('ai-chat-input');
+            input.value = promptText;
+            handleAiChatSubmit(new Event('submit'));
+        }
+
+        async function callGeminiWithBackoff(userQuery) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const menuCatalogText = menuItems.map(m =>
+                `- [${m.id}] ${m.name} (${m.category}, ${m.type}): ₹${m.price} — ${m.desc}`
+            ).join('\n');
+
+            const totalRev = generatedBills.reduce((sum, b) => sum + b.grandTotal, 0);
+            const activeOrdersSummary = customerOrders.map(o =>
+                `${o.orderId} for ${o.customerName} (${o.serviceType} ${o.tableRoom}) Status: ${o.status}`
+            ).join('; ');
+
+            const systemPrompt = `You are Horizon AI, the warm, polite, and knowledgeable 5-Star Hotel Concierge & Staff Billing Assistant at "The Grand Horizon Hotel".
+Keep responses concise (under 90 words), helpful, and formatted with clear bullet points when listing items.
+Always mention exact dish or suite names and prices in ₹ from the catalog below so the user can click to add them.
+
+LIVE HOTEL CATALOG (Food Menu & Suites):
+${menuCatalogText}
+
+HOTEL & BILLING SYSTEM RULES:
+- Taxes: 5% GST + 2.5% Service Charge (Total 7.5% tax).
+- Customers can order food directly from the "Order Food" section on the website, choose Restaurant Table, In-Suite Room Service, or Takeaway, and submit their order to the kitchen.
+- Employees can log in via the "Employee Portal" button (Demo credentials: EMP01 / 1234, ADMIN / 9999, CHEF / 5678) to load customer self-orders into the POS and generate/print thermal bills.
+- Current Live Kitchen Orders: ${activeOrdersSummary || 'None'}.
+- Today's Total Billed Revenue: ₹${totalRev.toFixed(2)} across ${generatedBills.length} invoices.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                }
+            };
+
+            const delays = [1000, 2000, 4000];
+            for (let attempt = 0; attempt <= delays.length; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const result = await response.json();
+                    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) return text;
+                    throw new Error('Empty response');
+                } catch (err) {
+                    if (attempt === delays.length) {
+                        return generateSmartLocalFallback(userQuery);
+                    }
+                    await new Promise(r => setTimeout(r, delays[attempt]));
+                }
+            }
+        }
+
+        function generateSmartLocalFallback(query) {
+            const q = query.toLowerCase();
+            if (q.includes('veg') && !q.includes('non')) {
+                return `Here are our top **Vegetarian Specialties**:\n• **Truffle Mushroom Arancini** (₹380) - Starters\n• **Paneer Lababdar Royal** (₹490) - Main Course\n• **Saffron Pistachio Rasmalai** (₹280) - Desserts\n\nTap **+ Add** below to add any dish to your order tray!`;
+            }
+            if (q.includes('suite') || q.includes('room') || q.includes('stay')) {
+                return `We offer 3 luxury accommodations:\n• **Deluxe King Room (1 Night)** — ₹4,500\n• **Executive Club Suite (1 Night)** — ₹7,500\n• **Presidential Horizon Suite (1 Night)** — ₹12,500\n\nAll rooms include complimentary breakfast and 24/7 room service.`;
+            }
+            if (q.includes('bill') || q.includes('login') || q.includes('employee') || q.includes('pos')) {
+                return `**How to Generate a Customer Bill:**\n1. Click **Employee Portal** in the top bar (Demo ID: **EMP01**, PIN: **1234**).\n2. Open **Customer Self-Orders** to load a guest's order or click items in the POS.\n3. Enter customer details and click **Generate & Print Customer Bill**.`;
+            }
+            return `I recommend trying our chef's signature **Old Delhi Butter Chicken** (₹580) or **Paneer Lababdar Royal** (₹490) paired with our **Assorted Artisan Naan Basket** (₹220), followed by **Belgian Dark Chocolate Lava Cake** (₹350)!`;
+        }
+
+        async function handleAiChatSubmit(e) {
+            if (e) e.preventDefault();
+            if (isAiTyping) return;
+
+            const inputEl = document.getElementById('ai-chat-input');
+            const userText = inputEl.value.trim();
+            if (!userText) return;
+
+            inputEl.value = '';
+            aiChatHistory.push({ sender: 'user', text: userText });
+            isAiTyping = true;
+            renderAiChatMessages();
+
+            const reply = await callGeminiWithBackoff(userText);
+            const mentionedIds = extractMentionedMenuIds(reply);
+
+            isAiTyping = false;
+            aiChatHistory.push({
+                sender: 'bot',
+                text: reply,
+                suggestedIds: mentionedIds
+            });
+            renderAiChatMessages();
+        }
+
+        // ================= CUSTOM TOAST NOTIFICATIONS =================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let icon = 'fa-circle-info text-blue-400';
+            if (type === 'success') icon = 'fa-circle-check text-emerald-400';
+            if (type === 'error')   icon = 'fa-triangle-exclamation text-red-400';
+
+            toast.className = 'bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 flex items-center gap-3 text-xs font-medium pointer-events-auto transition-all duration-300';
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-base"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        // Helper called by the Real-Time Cloud Database listener whenever remote data updates
+        window.syncFromCloudDatabase = function({ menu, orders, bills, customers }) {
+            if (Array.isArray(menu) && menu.length > 0) {
+                menuItems = menu;
+            }
+            if (Array.isArray(orders)) {
+                customerOrders = orders;
+                const maxOrd = orders.reduce((max, o) => {
+                    const num = parseInt((o.orderId || '').replace(/\D/g, ''), 10);
+                    return !isNaN(num) && num > max ? num : max;
+                }, 500);
+                orderCounter = maxOrd + 1;
+            }
+            if (Array.isArray(bills)) {
+                generatedBills = bills;
+                const maxInv = bills.reduce((max, b) => {
+                    const num = parseInt((b.invoiceId || '').replace('INV-2026-', ''), 10);
+                    return !isNaN(num) && num > max ? num : max;
+                }, 1000);
+                invoiceCounter = maxInv + 1;
+            }
+            if (Array.isArray(customers)) {
+                dailyCustomers = customers;
+            }
+
+            renderPublicMenu();
+            renderCustomerCartUI();
+            renderCustomerActiveOrders();
+            renderPosMenuGrid();
+            renderPosCart();
+            renderPosCustomerOrders();
+            renderManageMenuTable();
+            renderBillsHistory();
+            renderDailyCustomersTable();
+            updatePosMetrics();
+        };
+    </script>
+
+    <!-- ================= REAL-TIME CLOUD DATABASE INTEGRATION ================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const statusDot = document.getElementById('cloud-status-dot');
+        const statusText = document.getElementById('cloud-status-text');
+        const uidBadge = document.getElementById('pos-cloud-uid');
+
+        function setCloudStatus(online, label, uidText = '') {
+            if (statusDot) {
+                statusDot.className = online
+                    ? 'w-2 h-2 rounded-full bg-emerald-400'
+                    : 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+            }
+            if (statusText) statusText.textContent = label;
+            if (uidBadge && uidText) uidBadge.textContent = uidText;
+        }
+
+        async function initRealTimeCloudDB() {
+            try {
+                if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+                    setCloudStatus(false, 'Local Memory Mode');
+                    return;
+                }
+
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'grand-horizon-hotel-app';
+
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+                const db = getFirestore(app);
+
+                // RULE 3: Authenticate FIRST before any database operations
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (!user) return;
+                    setCloudStatus(true, 'Cloud DB Connected', `Node: ${user.uid}`);
+
+                    // RULE 1: Strict public data collection paths
+                    const menuColRef      = collection(db, 'artifacts', appId, 'public', 'data', 'menuItems');
+                    const ordersColRef    = collection(db, 'artifacts', appId, 'public', 'data', 'customerOrders');
+                    const billsColRef     = collection(db, 'artifacts', appId, 'public', 'data', 'generatedBills');
+                    const customersColRef = collection(db, 'artifacts', appId, 'public', 'data', 'dailyCustomers');
+
+                    let menuSeeded = false;
+
+                    // Expose Cloud Write Operations globally
+                    window.cloudDB = {
+                        saveMenuItem: async (itemObj) => {
+                            if (!auth.currentUser) return;
+                            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'menuItems', itemObj.id);
+                            await setDoc(ref, itemObj);
+                        },
+                        removeMenuItem: async (itemId) => {
+                            if (!auth.currentUser) return;
+                            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'menuItems', itemId);
+                            await deleteDoc(ref);
+                        },
+                        saveOrder: async (orderObj) => {
+                            if (!auth.currentUser) return;
+                            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'customerOrders', orderObj.orderId);
+                            await setDoc(ref, orderObj);
+                        },
+                        saveBill: async (billObj) => {
+                            if (!auth.currentUser) return;
+                            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'generatedBills', billObj.invoiceId);
+                            await setDoc(ref, billObj);
+                        },
+                        clearAllBills: async (billsList) => {
+                            if (!auth.currentUser) return;
+                            for (const b of billsList) {
+                                if (b.invoiceId) {
+                                    const ref = doc(db, 'artifacts', appId, 'public', 'data', 'generatedBills', b.invoiceId);
+                                    await deleteDoc(ref);
+                                }
+                            }
+                            for (const c of dailyCustomers) {
+                                if (c.custId) {
+                                    const ref = doc(db, 'artifacts', appId, 'public', 'data', 'dailyCustomers', c.custId);
+                                    await setDoc(ref, { ...c, totalSpent: 0 });
+                                }
+                            }
+                        },
+                        saveCustomer: async (custObj) => {
+                            if (!auth.currentUser) return;
+                            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'dailyCustomers', custObj.custId);
+                            await setDoc(ref, custObj);
+                        }
+                    };
+
+                    // 1. Live Listener for Hotel Menu Catalog
+                    onSnapshot(
+                        menuColRef,
+                        async (snapshot) => {
+                            if (snapshot.empty && !menuSeeded) {
+                                menuSeeded = true;
+                                for (const item of menuItems) {
+                                    const ref = doc(db, 'artifacts', appId, 'public', 'data', 'menuItems', item.id);
+                                    await setDoc(ref, { ...item, createdAt: Date.now() });
+                                }
+                                return;
+                            }
+                            const loadedMenu = [];
+                            snapshot.forEach((docSnap) => loadedMenu.push(docSnap.data()));
+                            loadedMenu.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+                            window.syncFromCloudDatabase({ menu: loadedMenu });
+                        },
+                        (err) => console.error('Menu Cloud Sync Error:', err)
+                    );
+
+                    // 2. Live Listener for Customer Self-Orders (No pre-filled orders)
+                    onSnapshot(
+                        ordersColRef,
+                        (snapshot) => {
+                            const loadedOrders = [];
+                            snapshot.forEach((docSnap) => loadedOrders.push(docSnap.data()));
+                            loadedOrders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                            window.syncFromCloudDatabase({ orders: loadedOrders });
+                        },
+                        (err) => console.error('Orders Cloud Sync Error:', err)
+                    );
+
+                    // 3. Live Listener for Generated Customer Bills (Starts at ₹0.00 until billed)
+                    onSnapshot(
+                        billsColRef,
+                        (snapshot) => {
+                            const loadedBills = [];
+                            snapshot.forEach((docSnap) => loadedBills.push(docSnap.data()));
+                            loadedBills.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                            window.syncFromCloudDatabase({ bills: loadedBills });
+                        },
+                        (err) => console.error('Bills Cloud Sync Error:', err)
+                    );
+
+                    // 4. Live Listener for Daily Customers Registry
+                    onSnapshot(
+                        customersColRef,
+                        (snapshot) => {
+                            const loadedCustomers = [];
+                            snapshot.forEach((docSnap) => loadedCustomers.push(docSnap.data()));
+                            loadedCustomers.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+                            window.syncFromCloudDatabase({ customers: loadedCustomers });
+                        },
+                        (err) => console.error('Daily Customers Cloud Sync Error:', err)
+                    );
+                });
+            } catch (error) {
+                console.error('Cloud DB Initialization Error:', error);
+                setCloudStatus(false, 'Offline / Local Mode');
+            }
+        }
+
+        initRealTimeCloudDB();
+    </script>
+</body>
+</html>
