@@ -2536,15 +2536,60 @@
                 </tr>
             `).join('');
         }
+async function updatePosMetrics() {
+    try {
+        const response = await fetch('/api/bills');
 
-        function updatePosMetrics() {
-            const totalRev = generatedBills.reduce((sum, b) => sum + (Number(b.grandTotal) || 0), 0);
-            document.getElementById('pos-today-revenue').textContent = `₹${totalRev.toFixed(2)}`;
-            document.getElementById('pos-total-items').textContent = menuItems.length;
-            const custBadge = document.getElementById('customers-count-badge');
-            if (custBadge) custBadge.textContent = dailyCustomers.length;
+        if (!response.ok) {
+            throw new Error('Failed to load bills from Cloudflare');
         }
 
+        const bills = await response.json();
+
+        // Convert database fields into existing frontend fields
+        generatedBills = bills.map(b => ({
+            id: b.id,
+            invoiceId: b.invoice_no,
+            customerName: b.customer_name,
+            customerPhone: b.phone,
+            serviceType: b.service_type,
+            tableRoom: b.table_room_no,
+            subtotal: Number(b.subtotal) || 0,
+            discountAmt: Number(b.discount) || 0,
+            grandTotal: Number(b.total) || 0,
+            paymentMode: b.payment_mode,
+            paymentStatus: b.payment_status,
+            staffName: b.created_by,
+            createdAt: b.created_at
+        }));
+
+    } catch (error) {
+        console.error('Cloudflare loading error:', error);
+    }
+
+    const totalRev = generatedBills.reduce(
+        (sum, b) => sum + (Number(b.grandTotal) || 0), 0
+    );
+
+    document.getElementById('pos-today-revenue').textContent =
+        `₹${totalRev.toFixed(2)}`;
+
+    document.getElementById('pos-total-items').textContent =
+        menuItems.length;
+
+    const custBadge = document.getElementById('customers-count-badge');
+
+    if (custBadge) {
+        custBadge.textContent = dailyCustomers.length;
+    }
+
+    const billBadge = document.getElementById('history-count-badge');
+
+    if (billBadge) {
+        billBadge.textContent = generatedBills.length;
+    }
+}
+      
         async function clearAllGeneratedBills() {
             const oldBills = [...generatedBills];
             generatedBills = [];
