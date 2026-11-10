@@ -2505,37 +2505,64 @@
             `).join('');
         }
 
-        // ================= BILLING HISTORY & METRICS =================
-        function renderBillsHistory() {
-            const tbody = document.getElementById('bills-history-tbody');
-            document.getElementById('history-count-badge').textContent = generatedBills.length;
+       // ================= BILLING HISTORY & METRICS =================
+function renderBillsHistory() {
+    const tbody = document.getElementById('bills-history-tbody');
+    const badge = document.getElementById('history-count-badge');
 
-            if (generatedBills.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400 text-xs">No bills generated yet.</td></tr>`;
-                return;
-            }
+    if (!tbody) return;
 
-            tbody.innerHTML = generatedBills.map(b => `
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="py-3.5 px-4 font-mono font-bold text-xs text-slate-800">${b.invoiceId}</td>
-                    <td class="py-3.5 px-4 text-xs text-slate-500">${b.date}</td>
-                    <td class="py-3.5 px-4">
-                        <p class="font-bold text-slate-800 text-xs">${b.customerName}</p>
-                        <p class="text-[11px] text-slate-400">${b.customerPhone}</p>
-                    </td>
-                    <td class="py-3.5 px-4 text-xs font-medium text-slate-700">${b.serviceType} • ${b.tableRoom}</td>
-                    <td class="py-3.5 px-4 text-xs text-slate-600">${b.paymentMode}</td>
-                    <td class="py-3.5 px-4 text-xs text-slate-600">${b.staffName}</td>
-                    <td class="py-3.5 px-4 font-bold text-emerald-700 text-sm">₹${b.grandTotal.toFixed(2)}</td>
-                    <td class="py-3.5 px-4 text-right">
-                        <button onclick="viewPastReceipt('${b.invoiceId}')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors inline-flex items-center gap-1.5">
-                            <i class="fa-solid fa-receipt text-gold-400"></i>
-                            <span>View / Print</span>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+    if (badge) {
+        badge.textContent = generatedBills.length;
+    }
+
+    if (generatedBills.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
+                    No bills generated yet.
+                </td>
+            </tr>`;
+        return;
+    }
+
+    tbody.innerHTML = generatedBills.map(b => {
+        const date = b.date || b.createdAt || '';
+
+        return `
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="py-3.5 px-4 font-mono font-bold text-xs text-slate-800">
+                    ${b.invoiceId || ''}
+                </td>
+                <td class="py-3.5 px-4 text-xs text-slate-500">
+                    ${date ? new Date(date).toLocaleDateString('en-IN') : ''}
+                </td>
+                <td class="py-3.5 px-4">
+                    <p class="font-bold text-slate-800 text-xs">${b.customerName || ''}</p>
+                    <p class="text-[11px] text-slate-400">${b.customerPhone || ''}</p>
+                </td>
+                <td class="py-3.5 px-4 text-xs font-medium text-slate-700">
+                    ${b.serviceType || ''} • ${b.tableRoom || ''}
+                </td>
+                <td class="py-3.5 px-4 text-xs text-slate-600">
+                    ${b.paymentMode || ''}
+                </td>
+                <td class="py-3.5 px-4 text-xs text-slate-600">
+                    ${b.staffName || ''}
+                </td>
+                <td class="py-3.5 px-4 font-bold text-emerald-700 text-sm">
+                    ₹${(Number(b.grandTotal) || 0).toFixed(2)}
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                    <button onclick="viewPastReceipt('${b.invoiceId}')"
+                        class="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors">
+                        <i class="fa-solid fa-receipt text-gold-400"></i>
+                        <span>View / Print</span>
+                    </button>
+                </td>
+            </tr>`;
+    }).join('');
+}
 async function updatePosMetrics() {
     try {
         const response = await fetch('/api/bills');
@@ -2566,7 +2593,7 @@ async function updatePosMetrics() {
     } catch (error) {
         console.error('Cloudflare loading error:', error);
     }
-
+   renderBillsHistory();
     const totalRev = generatedBills.reduce(
         (sum, b) => sum + (Number(b.grandTotal) || 0), 0
     );
