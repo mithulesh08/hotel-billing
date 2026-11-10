@@ -1,10 +1,20 @@
+
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "hotel-billing",
   "main": "src/index.js",
-  "compatibility_date": "2026-01-01",
+  "compatibility_date": "2026-11-10",
+
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
-  }
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hotel_billing_db",
+      "database_id": "d19f5c52-545c-442d-b11d-c3a8e5a23c1e"
+    }
+  ]
 }
