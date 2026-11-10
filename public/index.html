@@ -2252,6 +2252,34 @@
         }
 
         // ================= GENERATE CUSTOMER BILL & RECEIPT MODAL =================
+        async function saveBillToCloudflare(bill) {
+    const response = await fetch('/api/bills', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            invoice_no: bill.invoiceId,
+            customer_name: bill.customerName,
+            phone: bill.customerPhone,
+            service_type: bill.serviceType,
+            table_room_no: bill.tableRoom,
+            subtotal: bill.subtotal,
+            discount: bill.discountAmt,
+            total: bill.grandTotal,
+            payment_mode: bill.paymentMode,
+            payment_status: 'PAID',
+            created_by: bill.staffName
+        })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Could not save bill');
+    }
+
+    return await response.json();
+}
         async function generateFinalBill() {
             if (currentCart.length === 0) {
                 showToast('Please add at least one food or room item to generate a bill.', 'error');
@@ -2332,10 +2360,19 @@
             renderBillsHistory();
             updatePosMetrics();
 
-            if (window.cloudDB) {
-                if (window.cloudDB.saveBill) await window.cloudDB.saveBill(newBill);
-                if (billedOrderObj && window.cloudDB.saveOrder) await window.cloudDB.saveOrder(billedOrderObj);
-            }
+            try {
+    const savedBill = await saveBillToCloudflare(newBill);
+    console.log('Bill saved to Cloudflare:', savedBill);
+
+    if (window.cloudDB && window.cloudDB.saveOrder && billedOrderObj) {
+        await window.cloudDB.saveOrder(billedOrderObj);
+    }
+
+    showToast('Bill saved to Cloudflare database!', 'success');
+} catch (error) {
+    console.error('Cloudflare save failed:', error);
+    showToast('Bill could not be saved: ' + error.message, 'error');
+}
 
             // Automatically log/update the customer's daily spend in the Daily Customers Cloud Registry
             await upsertDailyCustomerRecord({
